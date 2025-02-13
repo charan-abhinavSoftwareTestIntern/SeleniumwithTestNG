@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="EndToEndSuite" parallel="false">
+
+    <!-- Include Listeners -->
+    <listeners>
+        <listener class-name="io.qameta.allure.testng.AllureTestNg" />
+        <listener class-name="Listeners.TestListener" />
+    </listeners>
+
+    <test name="Test-Login-To-AddEmployee">
+        <classes>
+            <class name="tests.LoginTest" />
+            <class name="tests.AddEmployeeTest" />
+            <class name="tests.LogoutTest" />
+        </classes>
+    </test>
+
+    <test name="Test-ReLogin-ApplyLeave">
+        <classes>
+            <class name="tests.ReLoginTest" />
+            <class name="tests.ApplyLeaveTest" />
+            <class name="tests.LogoutTest" />
+        </classes>
+    </test>
+
+    <test name="Test-ReLogin-As-Admin-To-Logout">
+        <classes>
+            <class name="tests.ReLoginToApproveLeaveTest" />
+            <class name="tests.LogoutTest" />
+        </classes>
+    </test>
+
+</suite>
+
+        <!--<?xml version="1.0" encoding="UTF-8"?>-->
+<!--<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">-->
+<!--<suite name="java">-->
+
+<!--    &lt;!&ndash; Include Listeners &ndash;&gt;-->
+<!--    <listeners>-->
+<!--        <listener class-name="io.qameta.allure.testng.AllureTestNg" />-->
+<!--        <listener class-name="Listeners.TestListener" />-->
+<!--    </listeners>-->
+
+<!--    <test name="Test-Login-To-AddEmployee">-->
+<!--        <classes>-->
+<!--            <class name="tests.LoginTest" />-->
+<!--            <class name="tests.AddEmployeeTest" />-->
+<!--            <class name="tests.LogoutTest" />-->
+<!--        </classes>-->
+<!--    </test>-->
+
+<!--    <test name="Test-ReLogin-ApplyLeave">-->
+<!--        <classes>-->
+<!--            <class name="tests.ReLoginTest" />-->
+<!--            <class name="tests.ApplyLeaveTest" />-->
+<!--            <class name="tests.LogoutTest" />-->
+<!--        </classes>-->
+<!--    </test>-->
+
+<!--    <test name="Test-ReLogin-To-ApproveLeave">-->
+<!--        <classes>-->
+<!--            <class name="tests.ReLoginToApproveLeaveTest" />-->
+<!--            <class name="tests.LogoutTest" />-->
+<!--        </classes>-->
+<!--    </test>-->
+
+<!--</suite>-->
+
