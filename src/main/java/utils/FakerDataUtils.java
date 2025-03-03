@@ -23,7 +23,7 @@ public class FakerDataUtils {
     // Method to generate employee ID in the format "OW000"
     public static String generateEmployeeId() {
         Random random = new Random();
-        int idNumber = random.nextInt(900) + 100; // generates a number between 100 and 999
+        int idNumber = random.nextInt(9000) + 100; // generates a number between 100 and 999
         return "OW" + idNumber;
     }
 

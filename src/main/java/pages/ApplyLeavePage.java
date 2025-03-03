@@ -1,20 +1,26 @@
 package pages;
 
 import com.github.javafaker.Faker;
-import org.openqa.selenium.By;
-import org.openqa.selenium.NoSuchElementException;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import utils.DataStorageUtils;
+import utils.DateUtils;
 import utils.SeleniumUtils;
+
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 public class ApplyLeavePage extends SeleniumUtils {
 
     WebDriver driver;
+    WebDriverWait wait;
     private Faker faker;
 
     public ApplyLeavePage(WebDriver driver){
         this.driver = driver;
         faker = new Faker();
+        this.wait = new WebDriverWait(driver, Duration.ofSeconds(15));
     }
 
     // Locators
@@ -48,7 +54,7 @@ public class ApplyLeavePage extends SeleniumUtils {
         clickElement(applyLeaveButton);
     }
 
-//    // Method to perform actions on the popup (click OK button)
+    // Method to perform actions on the popup (click OK button)
     public void clickOkButtonOnLopWarning() {
         clickElement(okButton);
     }
@@ -84,6 +90,48 @@ public class ApplyLeavePage extends SeleniumUtils {
 
     public boolean leaveAppliedSuccessfullyIsDisplayed(){
         return isElementDisplayed(leaveAppliedSuccessfully);
+    }
+
+
+    // Method to apply leave ensuring it's only on week days.
+
+//    public void applyLeave(String userLead, String userSubject, String userReason) {
+//        LocalDate today = LocalDate.now();
+//        LocalDate leaveStartDate = DateUtils.getNextWeekday(today);
+//        LocalDate leaveEndDate = leaveStartDate.plusDays(1); // Example: applying for a 2-day leave
+//
+//        clickApplyLeaveSection();
+//        clickApplyLeaveButton();
+//        clickOkButtonOnLopWarning();
+//        enterFromDate(leaveStartDate.toString());
+//        enterToDate(leaveEndDate.toString());
+//        selectLeadFromDropdown(userLead);
+//        enterSubject(userSubject);
+//        enterReasonForLeave(userReason);
+//        clickOnLeaveRadioButton();
+//        clickOnSubmitButton();
+//    }
+
+
+    public void applyLeave(String leaveStartDate, String userLead, String userSubject, String userReason) {
+        // Convert the input date (yyyy-MM-dd) to MM/dd/yyyy format
+        LocalDate parsedDate = LocalDate.parse(leaveStartDate);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy");
+        String formattedFromDate = parsedDate.format(formatter);
+        String formattedToDate = parsedDate.plusDays(1).format(formatter); // Next day as To Date
+
+        clickApplyLeaveSection();
+        clickApplyLeaveButton();
+        clickOkButtonOnLopWarning();
+        enterFromDate(formattedFromDate);  // Now correctly formatted
+        enterToDate(formattedToDate);
+        selectLeadFromDropdown(userLead);
+        enterSubject(userSubject);
+        enterReasonForLeave(userReason);
+        clickOnLeaveRadioButton();
+        clickOnSubmitButton();
+
+        System.out.println("Applied Leave From: " + formattedFromDate + " To: " + formattedToDate);
     }
 
 }

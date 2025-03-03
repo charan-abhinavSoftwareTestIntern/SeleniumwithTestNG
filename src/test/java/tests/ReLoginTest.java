@@ -1,6 +1,10 @@
 package tests;
 
 import base.BaseTest;
+import io.qameta.allure.Description;
+import io.qameta.allure.Feature;
+import io.qameta.allure.Severity;
+import io.qameta.allure.SeverityLevel;
 import org.openqa.selenium.WebDriver;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -11,6 +15,9 @@ import utils.PropertyFileReaderUtil;
 public class ReLoginTest extends BaseTest {
 
     @Test
+    @Severity(SeverityLevel.CRITICAL)
+    @Description("Re-Login test for UrBuddi")
+    @Feature("Re-Login Feature")
     public void reLoginAsNewEmployee() {
         // Retrieve the stored email and password
         String email = DataStorageUtils.getFakeEmail();

@@ -1,6 +1,10 @@
 package tests;
 
 import base.BaseTest;
+import io.qameta.allure.Description;
+import io.qameta.allure.Feature;
+import io.qameta.allure.Severity;
+import io.qameta.allure.SeverityLevel;
 import org.openqa.selenium.WebDriver;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -11,7 +15,10 @@ import utils.FakerDataUtils;
 public class AddEmployeeTest  {
 
     @Test
-    public void addingEmployee() throws InterruptedException {
+    @Severity(SeverityLevel.CRITICAL)
+    @Description("Add Employee test for UrBuddi")
+    @Feature("Add Employee Feature")
+    public void addingEmployee() {
 
         // Get WebDriver from BaseTest map
         WebDriver driver = BaseTest.map.get("charan");
@@ -26,9 +33,6 @@ public class AddEmployeeTest  {
         // Generate and store fake employee details (email and password)
         addEmployeePage.generateAndStoreFakeEmployeeDetails();
 
-        addEmployeePage.enterFirstName(FakerDataUtils.generateFirstName());
-        addEmployeePage.enterLastName(FakerDataUtils.generateLastName());
-        addEmployeePage.enterEmpId(FakerDataUtils.generateEmployeeId());
         addEmployeePage.enterRole("HR");
         addEmployeePage.enterDob(FakerDataUtils.generateDateOfBirth());
         addEmployeePage.enterDoj(FakerDataUtils.generateValidJoiningDate());
@@ -58,6 +62,9 @@ public class AddEmployeeTest  {
         // Optionally, print the generated email and password (for debugging or verification purposes)
         String generatedEmail = DataStorageUtils.getFakeEmail();
         String generatedPassword = DataStorageUtils.getFakePassword();
+        String generatedFirstName = DataStorageUtils.getFakeFirstName();
+        String generatedLastName = DataStorageUtils.getFakeLastName();
+        String generatedEmployeeId = DataStorageUtils.getFakeEmployeeId();
 
         System.out.println("Generated Email: " + generatedEmail);
         System.out.println("Generated Password: " + generatedPassword);
