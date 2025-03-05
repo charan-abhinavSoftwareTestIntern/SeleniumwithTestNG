@@ -4,12 +4,10 @@ import com.github.javafaker.Faker;
 import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import utils.DataStorageUtils;
-import utils.DateUtils;
+import utils.FakerDataUtils;
 import utils.SeleniumUtils;
-
 import java.time.Duration;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
+
 
 public class ApplyLeavePage extends SeleniumUtils {
 
@@ -33,7 +31,7 @@ public class ApplyLeavePage extends SeleniumUtils {
     public final By okButton = By.xpath("(//div[@class='d-flex flex-row justify-content-center gap-5'])[2]/button[2]");
     public final By applyLeaveTitle = By.cssSelector("[class='modal-heading']");
     public final By closeIconApplyLeave = By.cssSelector(".close-btn-div svg");
-    public final By fromDate = By.id("fromDate");
+    public final By fromDateField = By.id("fromDate");
     public final By toDate = By.id("toDate");
     public final By selectLead = By.cssSelector("[name='lead']");
     public final By subjectInputField = By.cssSelector("[name='subject']");
@@ -54,15 +52,22 @@ public class ApplyLeavePage extends SeleniumUtils {
         clickElement(applyLeaveButton);
     }
 
-    // Method to perform actions on the popup (click OK button)
     public void clickOkButtonOnLopWarning() {
         clickElement(okButton);
     }
 
-    // Method to apply leave (filling from date)
-    public void enterFromDate(String leaveFromDate){
-        sendKeysToElement(fromDate, leaveFromDate);
+    // Generate and store 'From' date
+    public void generateAndStoreAppliedFromDate() {
+        String fakeFromDate = FakerDataUtils.generateFutureFromDate();
+
+        // Store 'From' date in its applied format (MM-dd-yyyy)
+        DataStorageUtils.setAppliedFakeFromDate(fakeFromDate);
+        System.out.println("Stored Faker 'From' Date (Applied Format): " + fakeFromDate);
+
+        // Enter 'From' date in the input field
+        sendKeysToElement(fromDateField, fakeFromDate);
     }
+
 
     public void enterToDate(String leaveToDate){
         sendKeysToElement(toDate, leaveToDate);
@@ -92,46 +97,25 @@ public class ApplyLeavePage extends SeleniumUtils {
         return isElementDisplayed(leaveAppliedSuccessfully);
     }
 
-
-    // Method to apply leave ensuring it's only on week days.
-
 //    public void applyLeave(String userLead, String userSubject, String userReason) {
-//        LocalDate today = LocalDate.now();
-//        LocalDate leaveStartDate = DateUtils.getNextWeekday(today);
-//        LocalDate leaveEndDate = leaveStartDate.plusDays(1); // Example: applying for a 2-day leave
+//        LocalDate leaveStartDate = DateUtils.getFutureWeekday(3); // Get a valid future weekday, 3 days ahead
+//        LocalDate leaveEndDate = leaveStartDate.plusDays(1); // Applying for a 2-day leave
+//
+//        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy");
+//        String formattedFromDate = leaveStartDate.format(formatter);
+//        String formattedToDate = leaveEndDate.format(formatter);
 //
 //        clickApplyLeaveSection();
 //        clickApplyLeaveButton();
 //        clickOkButtonOnLopWarning();
-//        enterFromDate(leaveStartDate.toString());
-//        enterToDate(leaveEndDate.toString());
+//        enterFromDate(formattedFromDate);
+//        enterToDate(formattedToDate);
 //        selectLeadFromDropdown(userLead);
 //        enterSubject(userSubject);
 //        enterReasonForLeave(userReason);
 //        clickOnLeaveRadioButton();
 //        clickOnSubmitButton();
+//
+//        System.out.println("Applied Leave From: " + formattedFromDate + " To: " + formattedToDate);
 //    }
-
-
-    public void applyLeave(String leaveStartDate, String userLead, String userSubject, String userReason) {
-        // Convert the input date (yyyy-MM-dd) to MM/dd/yyyy format
-        LocalDate parsedDate = LocalDate.parse(leaveStartDate);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy");
-        String formattedFromDate = parsedDate.format(formatter);
-        String formattedToDate = parsedDate.plusDays(1).format(formatter); // Next day as To Date
-
-        clickApplyLeaveSection();
-        clickApplyLeaveButton();
-        clickOkButtonOnLopWarning();
-        enterFromDate(formattedFromDate);  // Now correctly formatted
-        enterToDate(formattedToDate);
-        selectLeadFromDropdown(userLead);
-        enterSubject(userSubject);
-        enterReasonForLeave(userReason);
-        clickOnLeaveRadioButton();
-        clickOnSubmitButton();
-
-        System.out.println("Applied Leave From: " + formattedFromDate + " To: " + formattedToDate);
-    }
-
 }

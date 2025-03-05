@@ -20,11 +20,13 @@ public class DateUtils {
         return date;
     }
 
-    // This method takes a String date in yyyy-MM-dd format, processes it, and returns the next available
-    // weekday in the same format.
-    public static String getNextWeekdays(String date) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        LocalDate inputDate = LocalDate.parse(date, formatter);
-        return getNextWeekday(inputDate).format(formatter);
+    public static LocalDate getFutureWeekday(int daysAhead) {
+        LocalDate futureDate = LocalDate.now().plusDays(daysAhead);
+
+        // Adjust the date if it falls on a weekend
+        while (futureDate.getDayOfWeek() == DayOfWeek.SATURDAY || futureDate.getDayOfWeek() == DayOfWeek.SUNDAY) {
+            futureDate = futureDate.plusDays(1);
+        }
+        return futureDate;
     }
 }

@@ -9,7 +9,8 @@ import org.openqa.selenium.WebDriver;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import pages.LeaveVerificationPage;
-import utils.PropertyFileReaderUtil;
+import utils.DataStorageUtils;
+import utils.FakerDataUtils;
 
 public class LeaveVerificationTest extends BaseTest {
 
@@ -23,11 +24,21 @@ public class LeaveVerificationTest extends BaseTest {
         WebDriver driver = BaseTest.map.get("charan");
 
         LeaveVerificationPage leaveVerificationPage = new LeaveVerificationPage(driver);
-
         leaveVerificationPage.clickOnLeaveManagementSection();
-        leaveVerificationPage.searchForAppliedDate(PropertyFileReaderUtil.getProperty("currentDate"));
+
+        // Retrieve stored 'From' date in applied format (MM-dd-yyyy)
+        String appliedFromDate = DataStorageUtils.getAppliedFakerFromDate();
+        System.out.println("Retrieved Stored 'From' Date (Applied Format): " + appliedFromDate);
+
+        // Convert to verification format (dd-MM-yyyy)
+        String verificationDate = FakerDataUtils.convertDateForVerification(appliedFromDate);
+        System.out.println("Converted 'From' Date for Verification: " + verificationDate);
+
+        // Search for the applied leave date in the verification format
+        leaveVerificationPage.searchForAppliedDate(verificationDate);
 
         //Assert.assertTrue(leaveVerificationPage.getLeaveStatus(), "Approved");
-        Assert.assertTrue(leaveVerificationPage.getLeaveStatus(), "Rejected");
+        Assert.assertTrue(leaveVerificationPage.getLeaveStatus(), "Leave status should be 'Rejected'");
+
     }
 }

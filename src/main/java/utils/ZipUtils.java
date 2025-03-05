@@ -1,63 +1,37 @@
 package utils;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.*;
-import java.util.zip.*;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 public class ZipUtils {
 
-    public static String zipResultsFolder(String sourceDir, String zipFilePath) {
-        File sourceFolder = new File(sourceDir);
-        if (!sourceFolder.exists()) {
-            System.err.println("⚠️ Source folder not found: " + sourceDir);
-            return null;
-        }
-
+    public static File zipDirectory(String sourceDirPath, String zipFilePath) {
         try {
-            File zipFile = new File(zipFilePath);
-            if (zipFile.exists()) {
-                zipFile.delete();
+            Path zipPath = Paths.get(zipFilePath);
+            Path sourceDir = Paths.get(sourceDirPath);
+            if (!Files.exists(sourceDir)) {
+                throw new IOException("Source directory does not exist: " + sourceDirPath);
             }
 
-            try (FileOutputStream fos = new FileOutputStream(zipFile);
-                 ZipOutputStream zipOut = new ZipOutputStream(fos)) {
-
-                zipFile(sourceFolder, sourceFolder.getName(), zipOut);
-            }
-
-            System.out.println("✅ Zipped folder: " + zipFilePath);
-            return zipFilePath;
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.err.println("❌ Failed to zip the folder.");
-            return null;
-        }
-    }
-
-    private static void zipFile(File fileToZip, String fileName, ZipOutputStream zipOut) throws IOException {
-        if (fileToZip.isHidden()) {
-            return;
-        }
-
-        if (fileToZip.isDirectory()) {
-            File[] children = fileToZip.listFiles();
-            if (children != null) {
-                for (File childFile : children) {
-                    zipFile(childFile, fileName + "/" + childFile.getName(), zipOut);
+            ZipOutputStream zipOutputStream = new ZipOutputStream(Files.newOutputStream(zipPath));
+            Files.walkFileTree(sourceDir, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    zipOutputStream.putNextEntry(new ZipEntry(sourceDir.relativize(file).toString()));
+                    Files.copy(file, zipOutputStream);
+                    zipOutputStream.closeEntry();
+                    return FileVisitResult.CONTINUE;
                 }
-            }
-            return;
-        }
-
-        try (FileInputStream fis = new FileInputStream(fileToZip)) {
-            ZipEntry zipEntry = new ZipEntry(fileName);
-            zipOut.putNextEntry(zipEntry);
-
-            byte[] bytes = new byte[1024];
-            int length;
-            while ((length = fis.read(bytes)) >= 0) {
-                zipOut.write(bytes, 0, length);
-            }
+            });
+            zipOutputStream.close();
+            return zipPath.toFile();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
         }
     }
 }

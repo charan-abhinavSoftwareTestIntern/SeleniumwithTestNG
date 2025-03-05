@@ -77,17 +77,4 @@ public class LoginPage extends SeleniumUtils {
         return dashboardTitleDisplay.getText();
     }
 
-//    private PropertyFileReader propertyFileReader;
-
-    public LoginPage(){
-        propertyFileReader = new PropertyFileReaderUtil(); // Initialize propertyFileReader to get properties
-    }
-
-    public void navigateToHomePage() {
-        // Use the base URL from the properties file
-        String url = getBaseUrl();
-        System.out.println("Navigating to: " + url);
-        // Code to navigate to the homepage (for example using WebDriver)
-    }
-
 }

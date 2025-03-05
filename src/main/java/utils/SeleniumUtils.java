@@ -1,12 +1,15 @@
 package utils;
 
 import base.BaseTest;
+import com.github.javafaker.Faker;
 import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.time.Duration;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class SeleniumUtils {
@@ -56,6 +59,7 @@ public class SeleniumUtils {
         }
     }
 
+
     // Send text to an input field
     public void sendKeysToElement(By locator, String text) {
         try {
@@ -76,10 +80,6 @@ public class SeleniumUtils {
         }
     }
 
-    // Close the current browser window
-    public void closeWindow() {
-        driver.close();
-    }
 
     // Navigate to a target element using Robot Class
     public void navigateToTargetUsingRobot(By locator, int rightArrowPresses) throws AWTException {
@@ -93,4 +93,11 @@ public class SeleniumUtils {
             robot.delay(500);
         }
     }
+
+    // JavaScript Click Method
+    public static void clickUsingJS(WebDriver driver, WebElement element) {
+        JavascriptExecutor js = (JavascriptExecutor) driver;
+        js.executeScript("arguments[0].click();", element);
+    }
+
 }

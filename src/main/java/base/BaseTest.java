@@ -6,7 +6,9 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.firefox.FirefoxOptions;
+import org.testng.annotations.AfterSuite;
 import org.testng.annotations.AfterTest;
+import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.BeforeTest;
 import utils.ScreenshotUtils;
 
@@ -20,7 +22,7 @@ public class BaseTest {
     /**
      * Initializes the WebDriver based on the browser type
      */
-    @BeforeTest
+    @BeforeSuite
     public void initializeDriver() {
         String browser = System.getProperty("browser", "chrome"); // Dynamic selection with default Chrome
 
@@ -92,7 +94,7 @@ public class BaseTest {
     /**
      * Closes the browser window and cleans up resources
      */
-    @AfterTest
+    @AfterSuite
     public void closeWindow() {
         if (driver != null) {
             driver.quit();

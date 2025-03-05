@@ -68,6 +68,9 @@ public class AddEmployeeTest  {
 
         System.out.println("Generated Email: " + generatedEmail);
         System.out.println("Generated Password: " + generatedPassword);
+        System.out.println("Generated First Name: " + generatedFirstName);
+        System.out.println("Generated Last Name: " + generatedLastName);
+        System.out.println("Generated Employee Id: " + generatedEmployeeId);
 
         // Optionally assert that email and password are correctly generated (additional validation)
         Assert.assertNotNull(generatedEmail, "Generated email is null!");

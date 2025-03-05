@@ -7,7 +7,7 @@ public class DataStorageUtils {
         private static String fakeFirstName;
         private static String fakeLastName;
         private static String fakeEmployeeId;
-        private static String appliedFromDate;
+        private static String fakeAppliedFromDate;
 
         // Setters and Getters for email and password
         public static void setFakeEmail(String email) {
@@ -43,11 +43,21 @@ public class DataStorageUtils {
         }
 
         public static void setFakeEmployeeId(String employeeId){
+
             fakeEmployeeId = employeeId;
         }
 
         public static String getFakeEmployeeId(){
+
             return fakeEmployeeId;
+        }
+
+        public static void  setAppliedFakeFromDate(String appliedFromDate){
+            fakeAppliedFromDate = appliedFromDate;
+        }
+
+        public static String getAppliedFakerFromDate(){
+            return fakeAppliedFromDate;
         }
 
 }

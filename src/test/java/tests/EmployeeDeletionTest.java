@@ -17,7 +17,7 @@ import utils.DataStorageUtils;
 @Feature("Employee Deletion Feature")
 public class EmployeeDeletionTest {
 
-    public void deletingEmployee(){
+    public void deletingEmployee() throws InterruptedException {
 
         WebDriver driver = BaseTest.map.get("charan");
 

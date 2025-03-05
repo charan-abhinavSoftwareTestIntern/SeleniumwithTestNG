@@ -1,5 +1,6 @@
 package pages;
 
+import com.github.javafaker.Faker;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -12,9 +13,10 @@ public class LeaveVerificationPage extends SeleniumUtils {
 
     WebDriver driver;
     WebDriverWait wait;
+    private Faker faker;
 
     public LeaveVerificationPage(WebDriver driver){
-
+        faker = new Faker();
         this.driver = driver;
         this.wait = new WebDriverWait(driver, Duration.ofSeconds(15));
     }
@@ -29,6 +31,7 @@ public class LeaveVerificationPage extends SeleniumUtils {
     public void clickOnLeaveManagementSection(){
         clickElement(leaveManagementSection);
     }
+
 
     public void searchForAppliedDate(String appliedDate){
         sendKeysToElement(startDateField, appliedDate);

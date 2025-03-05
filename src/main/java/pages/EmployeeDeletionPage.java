@@ -25,8 +25,8 @@ public class EmployeeDeletionPage extends SeleniumUtils {
     // Locators
     public final By employeesSection = By.xpath("//p[text()='Employees']");
     public final By searchEmployeeWithId = By.cssSelector("[aria-label='EMP ID Filter Input']");
-    // public final By employeeCheckBox = By.id("ag-1309-input");
-    public final By employeeCheckBox = By.xpath("//*[text()='" + employeeId + "']/../descendant::input");
+    public final By employeeCheckBox = By.xpath("//*[text()='" + employeeId + "']/ancestor::*[@role='rowgroup']//input[contains(@class,'checkbox-input')]");
+
     public final By deleteIcon = By.cssSelector("[class='deleteIcon']");
     public final By employeeDeletedSuccessMessage = By.xpath("//div[text()='Employee Deleted Successfully']");
 
@@ -41,7 +41,8 @@ public class EmployeeDeletionPage extends SeleniumUtils {
     }
 
     public void clickOnCheckBox(){
-        clickElement(employeeCheckBox);
+        WebElement element = driver.findElement(employeeCheckBox);
+        SeleniumUtils.clickUsingJS(driver, element); // Calling utility method
     }
 
     public void clickDeleteIcon(){
