@@ -25,8 +25,12 @@ jobs:
 
       - name: Install ChromeDriver
         run: |
-          CHROME_VERSION=$(google-chrome --version | awk '{print $3}')
+          CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d. -f1-3)
           CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION")
+          if [[ -z "$CHROMEDRIVER_VERSION" ]]; then
+            echo "Failed to get ChromeDriver version, using latest version instead."
+            CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE")
+          fi
           wget -N "https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip"
           unzip chromedriver_linux64.zip
           sudo mv chromedriver /usr/local/bin/
@@ -45,7 +49,7 @@ jobs:
       - name: Generate and Upload Allure Report
         run: |
           mvn allure:report
-          mkdir allure-results
+          mkdir -p allure-results
           cp -r target/allure-report/* allure-results/
 
       - name: Upload Allure Report as Artifact
