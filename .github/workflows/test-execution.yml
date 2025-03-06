@@ -52,6 +52,18 @@ jobs:
         run: |
           mvn clean test || echo "TEST_FAILED=true" >> $GITHUB_ENV
 
+      - name: Extract Test Results
+        run: |
+          PASSED=$(grep -oP '(?<=Tests run: )\d+' target/surefire-reports/testng-results.xml | awk '{s+=$1} END {print s}')
+          FAILED=$(grep -oP '(?<=Failures: )\d+' target/surefire-reports/testng-results.xml | awk '{s+=$1} END {print s}')
+          SKIPPED=$(grep -oP '(?<=Skipped: )\d+' target/surefire-reports/testng-results.xml | awk '{s+=$1} END {print s}')
+          TOTAL=$((PASSED + FAILED + SKIPPED))
+
+          echo "PASSED=$PASSED" >> $GITHUB_ENV
+          echo "FAILED=$FAILED" >> $GITHUB_ENV
+          echo "SKIPPED=$SKIPPED" >> $GITHUB_ENV
+          echo "TOTAL=$TOTAL" >> $GITHUB_ENV
+
       - name: Generate and Upload Allure Report
         run: |
           mvn allure:report
@@ -67,11 +79,6 @@ jobs:
       # Send Email Notification
       - name: Send Email Notification
         run: |
-          PASSED=14
-          FAILED=1
-          SKIPPED=0
-          TOTAL=15
-
           SUBJECT="📝 TestNG Suite Execution Summary"
           BODY="📊 Test Suite Execution Summary:\n✅ Passed: $PASSED\n❌ Failed: $FAILED\n⚠️ Skipped: $SKIPPED\n📌 Total: $TOTAL\n🔗 Allure Report: Attachments Included"
 
@@ -87,11 +94,6 @@ jobs:
       # Send Google Chat Notification Securely
       - name: Send Google Chat Notification
         run: |
-          PASSED=14
-          FAILED=1
-          SKIPPED=0
-          TOTAL=15
-
           CHAT_MESSAGE="📊 Test Suite Execution Summary:\n✅ Passed: $PASSED\n❌ Failed: $FAILED\n⚠️ Skipped: $SKIPPED\n📌 Total: $TOTAL\n🔗 Allure Report: Attachments Included"
 
           echo "Sending Google Chat notification..."
