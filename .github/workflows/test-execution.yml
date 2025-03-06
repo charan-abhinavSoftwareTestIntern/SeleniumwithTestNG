@@ -36,7 +36,7 @@ jobs:
           cp -r target/allure-report/* allure-results/
       
       - name: Upload Allure Report as Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: allure-report
           path: allure-results
