@@ -3,7 +3,6 @@ name: Scheduled Test Execution
 on:
   schedule:
     - cron: "0 2 * * *"  # Runs daily at 2 AM UTC
-
   workflow_dispatch:  # Allows manual execution
 
 jobs:
@@ -19,18 +18,19 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Install Chrome & ChromeDriver
+      - name: Install Chrome
         run: |
           sudo apt-get update
           sudo apt-get install -y google-chrome-stable
-          sudo apt-get install -y chromium-chromedriver
-          echo "CHROME_BIN=/usr/bin/google-chrome" >> $GITHUB_ENV
-          echo "CHROMEDRIVER_PATH=/usr/lib/chromium-browser/chromedriver" >> $GITHUB_ENV
-          google-chrome --version
-          chromedriver --version
 
-      - name: Set Chrome WebDriver Path
-        run: echo "WEBDRIVER_CHROME_DRIVER=$CHROMEDRIVER_PATH" >> $GITHUB_ENV
+      - name: Install ChromeDriver
+        run: |
+          CHROME_VERSION=$(google-chrome --version | awk '{print $3}')
+          CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION")
+          wget -N "https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip"
+          unzip chromedriver_linux64.zip
+          sudo mv chromedriver /usr/local/bin/
+          sudo chmod +x /usr/local/bin/chromedriver
 
       - name: Cache Maven Dependencies
         uses: actions/cache@v3
@@ -40,24 +40,19 @@ jobs:
           restore-keys: ${{ runner.os }}-maven-
 
       - name: Run Tests with Maven
+        run: mvn clean test
+
+      - name: Generate and Upload Allure Report
         run: |
-          mvn clean test -Dwebdriver.chrome.driver=$CHROMEDRIVER_PATH -Dheadless=true
-        continue-on-error: false  # Fails workflow if tests fail
+          mvn allure:report
+          mkdir allure-results
+          cp -r target/allure-report/* allure-results/
 
-      - name: Generate Allure Report
-        run: mvn allure:report
-
-      - name: Upload Allure Results
-        uses: actions/upload-artifact@v4
-        with:
-          name: allure-results
-          path: target/allure-results
-
-      - name: Upload Allure Report
+      - name: Upload Allure Report as Artifact
         uses: actions/upload-artifact@v4
         with:
           name: allure-report
-          path: target/allure-report
+          path: allure-results
 
       - name: Send Email with Test Report
         run: echo "Sending Email with Test Results"
