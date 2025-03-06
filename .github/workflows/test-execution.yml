@@ -23,9 +23,14 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y google-chrome-stable
-          CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d '.' -f 1)
           sudo apt-get install -y chromium-chromedriver
-          echo "CHROME_DRIVER_PATH=/usr/lib/chromium-browser/chromedriver" >> $GITHUB_ENV
+          echo "CHROME_BIN=/usr/bin/google-chrome" >> $GITHUB_ENV
+          echo "CHROMEDRIVER_PATH=/usr/lib/chromium-browser/chromedriver" >> $GITHUB_ENV
+          google-chrome --version
+          chromedriver --version
+
+      - name: Set Chrome WebDriver Path
+        run: echo "WEBDRIVER_CHROME_DRIVER=$CHROMEDRIVER_PATH" >> $GITHUB_ENV
 
       - name: Cache Maven Dependencies
         uses: actions/cache@v3
@@ -36,7 +41,7 @@ jobs:
 
       - name: Run Tests with Maven
         run: |
-          mvn clean test -Dwebdriver.chrome.driver=$CHROME_DRIVER_PATH
+          mvn clean test -Dwebdriver.chrome.driver=$CHROMEDRIVER_PATH -Dheadless=true
         continue-on-error: false  # Fails workflow if tests fail
 
       - name: Generate Allure Report
@@ -55,11 +60,7 @@ jobs:
           path: target/allure-report
 
       - name: Send Email with Test Report
-        run: |
-          echo "Sending Email with Test Results"
-          # Add your email sending script here
+        run: echo "Sending Email with Test Results"
 
       - name: Send Google Chat Notification
-        run: |
-          echo "Sending Google Chat Notification"
-          # Add your Google Chat webhook script here
+        run: echo "Sending Google Chat Notification"
