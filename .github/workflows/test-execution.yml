@@ -1,0 +1,52 @@
+name: Scheduled Test Execution
+
+on:
+  schedule:
+    - cron: "0 2 * * *"  # Runs daily at 2 AM UTC
+
+  workflow_dispatch:  # Allows manual execution
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+
+      - name: Cache Maven Dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven-
+
+      - name: Run Tests with Maven
+        run: mvn clean test
+
+      - name: Generate and Upload Allure Report
+        run: |
+          mvn allure:report
+          mkdir allure-results
+          cp -r target/allure-report/* allure-results/
+      
+      - name: Upload Allure Report as Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: allure-report
+          path: allure-results
+
+      - name: Send Email with Test Report
+        run: |
+          echo "Sending Email with Test Results"
+          # Your email script or integration
+
+      - name: Send Google Chat Notification
+        run: |
+          echo "Sending Google Chat Notification"
+          # Your Google Chat webhook script
