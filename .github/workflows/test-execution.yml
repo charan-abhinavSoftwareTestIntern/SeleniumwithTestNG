@@ -18,23 +18,13 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Install Chrome
+      - name: Install Chrome and ChromeDriver
         run: |
           sudo apt-get update
           sudo apt-get install -y google-chrome-stable
-
-      - name: Install ChromeDriver
-        run: |
-          CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d. -f1-3)
-          CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION")
-          if [[ -z "$CHROMEDRIVER_VERSION" ]]; then
-            echo "Failed to get ChromeDriver version, using latest version instead."
-            CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE")
-          fi
-          wget -N "https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip"
-          unzip chromedriver_linux64.zip
-          sudo mv chromedriver /usr/local/bin/
-          sudo chmod +x /usr/local/bin/chromedriver
+          sudo apt-get install -y chromedriver
+          echo "Chrome Version: $(google-chrome --version)"
+          echo "ChromeDriver Version: $(chromedriver --version)"
 
       - name: Cache Maven Dependencies
         uses: actions/cache@v3
@@ -49,7 +39,7 @@ jobs:
       - name: Generate and Upload Allure Report
         run: |
           mvn allure:report
-          mkdir -p allure-results
+          mkdir allure-results
           cp -r target/allure-report/* allure-results/
 
       - name: Upload Allure Report as Artifact
