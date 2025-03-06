@@ -1,10 +1,3 @@
-name: Scheduled Test Execution
-
-on:
-  schedule:
-    - cron: "0 2 * * *"  # Runs daily at 2 AM UTC
-  workflow_dispatch:  # Allows manual execution
-
 jobs:
   run-tests:
     runs-on: ubuntu-latest
@@ -65,25 +58,22 @@ jobs:
           echo "TOTAL=$TOTAL" >> $GITHUB_ENV
 
       - name: Generate and Upload Allure Report
-        run: |
-          mvn allure:report
-          mkdir allure-results
-          cp -r target/allure-report/* allure-results/
+        run: mvn allure:report || echo "Allure report generation failed!"
 
       - name: Upload Allure Report as Artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: allure-report
           path: allure-results
 
-      # Send Email Notification
+      # **Ensure Email Notification is Always Sent**
       - name: Send Email Notification
+        if: always()
         run: |
           SUBJECT="📝 TestNG Suite Execution Summary"
           BODY="📊 Test Suite Execution Summary:\n✅ Passed: $PASSED\n❌ Failed: $FAILED\n⚠️ Skipped: $SKIPPED\n📌 Total: $TOTAL\n🔗 Allure Report: Attachments Included"
 
-          echo "Sending email to charanabhinav.pydimarri@optimworks.com..."
-          
           echo -e "Subject: $SUBJECT\n\n$BODY" | \
           sendmail -S ${{ secrets.SMTP_SERVER }} \
                    -p ${{ secrets.SMTP_PORT }} \
@@ -91,8 +81,9 @@ jobs:
                    -ap ${{ secrets.EMAIL_PASSWORD }} \
                    charanabhinav.pydimarri@optimworks.com
 
-      # Send Google Chat Notification Securely
+      # **Ensure Google Chat Notification is Always Sent**
       - name: Send Google Chat Notification
+        if: always()
         run: |
           CHAT_MESSAGE="📊 Test Suite Execution Summary:\n✅ Passed: $PASSED\n❌ Failed: $FAILED\n⚠️ Skipped: $SKIPPED\n📌 Total: $TOTAL\n🔗 Allure Report: Attachments Included"
 
