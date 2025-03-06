@@ -18,12 +18,25 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Install Chrome and ChromeDriver
+      - name: Install Chrome
         run: |
           sudo apt-get update
           sudo apt-get install -y google-chrome-stable
-          sudo apt-get install -y chromedriver
           echo "Chrome Version: $(google-chrome --version)"
+
+      - name: Install ChromeDriver (Matching Version)
+        run: |
+          CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d. -f1-3)
+          CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION")
+          if [[ -z "$CHROMEDRIVER_VERSION" ]]; then
+            echo "Failed to get ChromeDriver version, using latest version instead."
+            CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE")
+          fi
+          echo "Downloading ChromeDriver version: $CHROMEDRIVER_VERSION"
+          wget -q "https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip"
+          unzip chromedriver_linux64.zip
+          sudo mv chromedriver /usr/local/bin/
+          sudo chmod +x /usr/local/bin/chromedriver
           echo "ChromeDriver Version: $(chromedriver --version)"
 
       - name: Cache Maven Dependencies
