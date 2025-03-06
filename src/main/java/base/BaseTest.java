@@ -7,9 +7,7 @@
 //import org.openqa.selenium.firefox.FirefoxDriver;
 //import org.openqa.selenium.firefox.FirefoxOptions;
 //import org.testng.annotations.AfterSuite;
-//import org.testng.annotations.AfterTest;
 //import org.testng.annotations.BeforeSuite;
-//import org.testng.annotations.BeforeTest;
 //import utils.ScreenshotUtils;
 //
 //import java.util.HashMap;
@@ -102,6 +100,9 @@
 //        }
 //    }
 //}
+
+
+
 package base;
 
 import io.github.bonigarcia.wdm.WebDriverManager;
