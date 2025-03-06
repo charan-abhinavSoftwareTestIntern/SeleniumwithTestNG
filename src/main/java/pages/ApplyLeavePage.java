@@ -1,20 +1,24 @@
 package pages;
 
 import com.github.javafaker.Faker;
-import org.openqa.selenium.By;
-import org.openqa.selenium.NoSuchElementException;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import utils.DataStorageUtils;
+import utils.FakerDataUtils;
 import utils.SeleniumUtils;
+import java.time.Duration;
+
 
 public class ApplyLeavePage extends SeleniumUtils {
 
     WebDriver driver;
+    WebDriverWait wait;
     private Faker faker;
 
     public ApplyLeavePage(WebDriver driver){
         this.driver = driver;
         faker = new Faker();
+        this.wait = new WebDriverWait(driver, Duration.ofSeconds(15));
     }
 
     // Locators
@@ -27,7 +31,7 @@ public class ApplyLeavePage extends SeleniumUtils {
     public final By okButton = By.xpath("(//div[@class='d-flex flex-row justify-content-center gap-5'])[2]/button[2]");
     public final By applyLeaveTitle = By.cssSelector("[class='modal-heading']");
     public final By closeIconApplyLeave = By.cssSelector(".close-btn-div svg");
-    public final By fromDate = By.id("fromDate");
+    public final By fromDateField = By.id("fromDate");
     public final By toDate = By.id("toDate");
     public final By selectLead = By.cssSelector("[name='lead']");
     public final By subjectInputField = By.cssSelector("[name='subject']");
@@ -48,15 +52,22 @@ public class ApplyLeavePage extends SeleniumUtils {
         clickElement(applyLeaveButton);
     }
 
-//    // Method to perform actions on the popup (click OK button)
     public void clickOkButtonOnLopWarning() {
         clickElement(okButton);
     }
 
-    // Method to apply leave (filling from date)
-    public void enterFromDate(String leaveFromDate){
-        sendKeysToElement(fromDate, leaveFromDate);
+    // Generate and store 'From' date
+    public void generateAndStoreAppliedFromDate() {
+        String fakeFromDate = FakerDataUtils.generateFutureFromDate();
+
+        // Store 'From' date in its applied format (MM-dd-yyyy)
+        DataStorageUtils.setAppliedFakeFromDate(fakeFromDate);
+        System.out.println("Stored Faker 'From' Date (Applied Format): " + fakeFromDate);
+
+        // Enter 'From' date in the input field
+        sendKeysToElement(fromDateField, fakeFromDate);
     }
+
 
     public void enterToDate(String leaveToDate){
         sendKeysToElement(toDate, leaveToDate);
@@ -86,4 +97,25 @@ public class ApplyLeavePage extends SeleniumUtils {
         return isElementDisplayed(leaveAppliedSuccessfully);
     }
 
+//    public void applyLeave(String userLead, String userSubject, String userReason) {
+//        LocalDate leaveStartDate = DateUtils.getFutureWeekday(3); // Get a valid future weekday, 3 days ahead
+//        LocalDate leaveEndDate = leaveStartDate.plusDays(1); // Applying for a 2-day leave
+//
+//        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy");
+//        String formattedFromDate = leaveStartDate.format(formatter);
+//        String formattedToDate = leaveEndDate.format(formatter);
+//
+//        clickApplyLeaveSection();
+//        clickApplyLeaveButton();
+//        clickOkButtonOnLopWarning();
+//        enterFromDate(formattedFromDate);
+//        enterToDate(formattedToDate);
+//        selectLeadFromDropdown(userLead);
+//        enterSubject(userSubject);
+//        enterReasonForLeave(userReason);
+//        clickOnLeaveRadioButton();
+//        clickOnSubmitButton();
+//
+//        System.out.println("Applied Leave From: " + formattedFromDate + " To: " + formattedToDate);
+//    }
 }

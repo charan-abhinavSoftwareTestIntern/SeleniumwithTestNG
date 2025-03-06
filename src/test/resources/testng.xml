@@ -2,69 +2,50 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
 <suite name="EndToEndSuite" parallel="false">
 
-    <!-- Include Listeners -->
+    <!-- Include listeners -->
     <listeners>
-        <listener class-name="io.qameta.allure.testng.AllureTestNg" />
-        <listener class-name="Listeners.TestListener" />
+        <listener class-name="io.qameta.allure.testng.AllureTestNg"/>
+        <listener class-name="listeners.TestListener"/>
     </listeners>
 
     <test name="Test-Login-To-AddEmployee">
         <classes>
-            <class name="tests.LoginTest" />
-            <class name="tests.AddEmployeeTest" />
-            <class name="tests.LogoutTest" />
+            <class name="tests.LoginTest"/>
+            <class name="tests.AddEmployeeTest"/>
+            <class name="tests.LogoutTest"/>
         </classes>
     </test>
 
     <test name="Test-ReLogin-ApplyLeave">
         <classes>
-            <class name="tests.ReLoginTest" />
-            <class name="tests.ApplyLeaveTest" />
-            <class name="tests.LogoutTest" />
+            <class name="tests.ReLoginTest"/>
+            <class name="tests.ApplyLeaveTest"/>
+            <class name="tests.LogoutTest"/>
         </classes>
     </test>
 
-    <test name="Test-ReLogin-As-Admin-To-Logout">
+    <test name="Test-ReLogin-To-Approve-Or-Reject-Leave">
         <classes>
-            <class name="tests.ReLoginToApproveLeaveTest" />
-            <class name="tests.LogoutTest" />
+            <class name="tests.ReLoginToApproveLeaveTest"/>
+            <class name="tests.LeaveRejectionTest"/>  <!-- Renamed for clarity -->
+            <class name="tests.LogoutTest"/>
+        </classes>
+    </test>
+
+    <test name="ReLogin-As-Employee-To-Verify-Leave-Status">
+        <classes>
+            <class name="tests.ReLoginTest"/>
+            <class name="tests.LeaveVerificationTest"/>
+            <class name="tests.LogoutTest"/>
+        </classes>
+    </test>
+
+    <test name="ReLogin-As-Admin-To-Delete-Created-Employee">
+        <classes>
+            <class name="tests.ReLoginToApproveLeaveTest"/>
+            <class name="tests.EmployeeDeletionTest"/>
+            <class name="tests.LogoutTest"/>
         </classes>
     </test>
 
 </suite>
-
-        <!--<?xml version="1.0" encoding="UTF-8"?>-->
-<!--<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">-->
-<!--<suite name="java">-->
-
-<!--    &lt;!&ndash; Include Listeners &ndash;&gt;-->
-<!--    <listeners>-->
-<!--        <listener class-name="io.qameta.allure.testng.AllureTestNg" />-->
-<!--        <listener class-name="Listeners.TestListener" />-->
-<!--    </listeners>-->
-
-<!--    <test name="Test-Login-To-AddEmployee">-->
-<!--        <classes>-->
-<!--            <class name="tests.LoginTest" />-->
-<!--            <class name="tests.AddEmployeeTest" />-->
-<!--            <class name="tests.LogoutTest" />-->
-<!--        </classes>-->
-<!--    </test>-->
-
-<!--    <test name="Test-ReLogin-ApplyLeave">-->
-<!--        <classes>-->
-<!--            <class name="tests.ReLoginTest" />-->
-<!--            <class name="tests.ApplyLeaveTest" />-->
-<!--            <class name="tests.LogoutTest" />-->
-<!--        </classes>-->
-<!--    </test>-->
-
-<!--    <test name="Test-ReLogin-To-ApproveLeave">-->
-<!--        <classes>-->
-<!--            <class name="tests.ReLoginToApproveLeaveTest" />-->
-<!--            <class name="tests.LogoutTest" />-->
-<!--        </classes>-->
-<!--    </test>-->
-
-<!--</suite>-->
-

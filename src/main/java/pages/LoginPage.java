@@ -13,6 +13,18 @@ import java.time.Duration;
 
 public class LoginPage extends SeleniumUtils {
 
+    WebDriver driver;//instance
+    PropertyFileReaderUtil propertyFileReader;
+    WebDriverWait wait;
+
+    // Constructor to initialize driver and PropertyFileReader
+    public LoginPage(WebDriver driver) {// instance
+        this.driver = driver;
+        this.propertyFileReader = new PropertyFileReaderUtil();
+        this.wait = new WebDriverWait(driver, Duration.ofSeconds(15));
+
+    }
+
     // Locators
     public final By emailField = By.id("userEmail");
     public final By passwordField = By.id("userPassword");
@@ -21,15 +33,6 @@ public class LoginPage extends SeleniumUtils {
     public final By invalidCredentialsError = By.cssSelector("//p[contains(@class,'err-msg-display')]");
     public final By dashboardPageTitle = By.xpath("//div[@class='page-header-container']/p");
 
-    WebDriver driver;//instance
-    PropertyFileReaderUtil propertyFileReader;
-
-    // Constructor to initialize driver and PropertyFileReader
-    public LoginPage(WebDriver driver) {// instance
-        this.driver = driver;
-        this.propertyFileReader = new PropertyFileReaderUtil();
-
-    }
 
     // Fetch base URL from the properties file
     public String getBaseUrl(){
@@ -72,19 +75,6 @@ public class LoginPage extends SeleniumUtils {
     public String getDashboardTitle() {
         WebElement dashboardTitleDisplay = driver.findElement(By.xpath("//div[@class='page-header-container']/p"));
         return dashboardTitleDisplay.getText();
-    }
-
-//    private PropertyFileReader propertyFileReader;
-
-    public LoginPage(){
-        propertyFileReader = new PropertyFileReaderUtil(); // Initialize propertyFileReader to get properties
-    }
-
-    public void navigateToHomePage() {
-        // Use the base URL from the properties file
-        String url = getBaseUrl();
-        System.out.println("Navigating to: " + url);
-        // Code to navigate to the homepage (for example using WebDriver)
     }
 
 }

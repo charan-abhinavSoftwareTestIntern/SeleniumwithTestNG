@@ -3,19 +3,24 @@ package pages;
 import com.github.javafaker.Faker;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import utils.DataStorageUtils;
 import utils.FakerDataUtils;
 import utils.PropertyFileReaderUtil;
 import utils.SeleniumUtils;
 
+import java.time.Duration;
+
 public class AddEmployeePage extends SeleniumUtils {
 
     WebDriver driver;
     private Faker faker;
+    WebDriverWait wait;
 
     public AddEmployeePage(WebDriver driver) {
         this.driver = driver;
-        faker = new Faker();  // Initialize Faker instance to generate fake data
+        faker = new Faker();
+        this.wait = new WebDriverWait(driver, Duration.ofSeconds(15)); // Wait up to 15 sec// Initialize Faker instance to generate fake data
 
     }
 
@@ -57,36 +62,31 @@ public class AddEmployeePage extends SeleniumUtils {
         clickElement(addEmployeeButton);
     }
 
-    public void enterFirstName(String userFirstName) {
-        sendKeysToElement(firstName, userFirstName);
-    }
-
-    public void enterLastName(String userLastName) {
-        sendKeysToElement(lastName, userLastName);
-    }
-
-    public void enterEmpId(String userid) {
-        sendKeysToElement(employeeId, userid);
-    }
-
-
     public void enterRole(String userRoleName) {
         selectDropdownOptionByText(role, userRoleName);
     }
-
 
     // Modified to generate and store fake email and password
     public void generateAndStoreFakeEmployeeDetails() {
         String fakeEmail = FakerDataUtils.generateEmail();
         String fakePassword = FakerDataUtils.generatePassword();
+        String fakeFirstName = FakerDataUtils.generateFirstName();
+        String fakerLastName = FakerDataUtils.generateLastName();
+        String fakerEmployeeId = FakerDataUtils.generateEmployeeId();
 
         // Store the generated email and password in DataStorage
         DataStorageUtils.setFakeEmail(fakeEmail);
         DataStorageUtils.setFakePassword(fakePassword);
+        DataStorageUtils.setFakeFistName(fakeFirstName);
+        DataStorageUtils.setFakeLastName(fakerLastName);
+        DataStorageUtils.setFakeEmployeeId(fakerEmployeeId);
 
         // Fill in the form fields with fake data
         sendKeysToElement(email, fakeEmail);
         sendKeysToElement(password, fakePassword);
+        sendKeysToElement(firstName, fakeFirstName);
+        sendKeysToElement(lastName, fakerLastName);
+        sendKeysToElement(employeeId, fakerEmployeeId);
     }
 
     public void enterDob(String userDob) {
@@ -155,6 +155,7 @@ public class AddEmployeePage extends SeleniumUtils {
         clickElement(addButton);
     }
 
+    // Assertions
     public boolean isSavedSuccessfullyMessageDisplayed() {
         return isElementDisplayed(savedSuccessfully);
     }

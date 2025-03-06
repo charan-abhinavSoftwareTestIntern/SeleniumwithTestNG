@@ -6,29 +6,28 @@ import java.util.Properties;
 
 public class PropertyFileReaderUtil {
 
-    private static Properties properties;
+    private static final Properties properties = new Properties();
 
-    // Constructor to load the properties file
-    public PropertyFileReaderUtil() {
-        properties = new Properties();
-        try (InputStream inputStream = (getClass().getClassLoader().getResourceAsStream("testdata.properties"))) {
+    // Static block to ensure properties are loaded only once
+    static {
+        try (InputStream inputStream = PropertyFileReaderUtil.class.getClassLoader().getResourceAsStream("testdata.properties")) {
             if (inputStream != null) {
-                properties.load(inputStream);  // Load the properties from the file
+                properties.load(inputStream);
+                System.out.println("✅ Properties file loaded successfully!");
             } else {
-                System.out.println("Property file not found!");
+                System.err.println("❌ testdata.properties file not found!");
             }
         } catch (IOException e) {
             e.printStackTrace();
-            System.out.println("Error loading property file");
+            throw new RuntimeException("❌ Error loading property file.");
         }
     }
 
-    // Method to get the value of a property by key
     public static String getProperty(String key) {
         return properties.getProperty(key);
     }
 
     public static int getWaitInSeconds() {
-        return Integer.parseInt(properties.getProperty("explicitWait"));
+        return Integer.parseInt(properties.getProperty("explicitWait", "10")); // Default to 10 seconds
     }
 }

@@ -1,46 +1,77 @@
-// This class is used to send results for multiple mails at a time.
-
 package utils;
 
-import org.apache.commons.io.FileUtils;
+import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
-import org.openqa.selenium.WebDriver;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ScreenshotUtils {
     private static WebDriver driver;
+    private static final String SCREENSHOTS_DIR = "target/screenshots";
 
-    // ✅ Initialize WebDriver (Call this from BaseTest)
+    /**
+     * Set WebDriver instance.
+     * @param webDriver WebDriver instance.
+     */
     public static void setDriver(WebDriver webDriver) {
         driver = webDriver;
     }
 
-    // ✅ Capture Screenshot and return the file path
-    public static String captureScreenshot(String testName) {
+    /**
+     * Capture a screenshot and return its file path.
+     * @param screenshotName Name of the screenshot file (without extension).
+     * @return Absolute path of the saved screenshot or null if an error occurs.
+     */
+    public static String captureScreenshot(String screenshotName) {
         if (driver == null) {
-            System.err.println("⚠️ WebDriver is not initialized!");
+            System.err.println("❌ WebDriver is null. Cannot capture screenshot.");
             return null;
         }
 
-        // Generate timestamped filename
-        String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String screenshotPath = "screenshots/" + testName + "_" + timestamp + ".png";
+        File srcFile = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+        String screenshotPath = SCREENSHOTS_DIR + "/" + screenshotName + ".png";
 
         try {
-            File srcFile = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
-            File destFile = new File(screenshotPath);
-            FileUtils.copyFile(srcFile, destFile);
+            Files.createDirectories(Paths.get(SCREENSHOTS_DIR));
+            Files.copy(srcFile.toPath(), Paths.get(screenshotPath));
             System.out.println("📸 Screenshot saved: " + screenshotPath);
             return screenshotPath;
         } catch (IOException e) {
-            System.err.println("❌ Failed to save screenshot: " + e.getMessage());
+            System.err.println("❌ Error saving screenshot: " + e.getMessage());
             return null;
         }
+    }
+
+    /**
+     * Retrieve all screenshot file paths from the default screenshots directory.
+     * @return List of screenshot file paths.
+     */
+    public static List<String> getAllScreenshots() {
+        List<String> screenshotPaths = new ArrayList<>();
+        File directory = new File(SCREENSHOTS_DIR);
+
+        if (!directory.exists() || !directory.isDirectory()) {
+            System.err.println("⚠️ Screenshot directory not found: " + SCREENSHOTS_DIR);
+            return screenshotPaths;
+        }
+
+        File[] files = directory.listFiles((dir, name) -> name.toLowerCase().endsWith(".png"));
+        if (files == null || files.length == 0) {
+            System.err.println("⚠️ No screenshots found in directory: " + SCREENSHOTS_DIR);
+            return screenshotPaths;
+        }
+
+        for (File file : files) {
+            screenshotPaths.add(file.getAbsolutePath());
+        }
+
+        System.out.println("📁 Found " + screenshotPaths.size() + " screenshots.");
+        return screenshotPaths;
     }
 }
