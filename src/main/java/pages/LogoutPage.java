@@ -20,7 +20,7 @@ public class LogoutPage extends SeleniumUtils {
     }
 
     // Locators
-    public final By logoutSection = By.cssSelector("[class='d-flex align-items logout-list-item mt-2']");
+    public final By logoutSection = By.xpath("//p[text()='Logout']");
     public final By logoutPageTitle = By.cssSelector("[class='modal-heading']");
     public final By closeButton = By.cssSelector("[class='close-btn']");
     public final By noButton = By.xpath("//div[@class='d-flex gap-2']/button[1]");

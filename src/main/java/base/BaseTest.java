@@ -113,7 +113,6 @@ import org.openqa.selenium.firefox.FirefoxOptions;
 import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeSuite;
 import utils.ScreenshotUtils;
-
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -122,7 +121,7 @@ public class BaseTest {
     public static HashMap<String, WebDriver> map = new HashMap<>();
 
     /**
-     * Initializes the WebDriver based on the browser type
+     * Initializes the WebDriver based on the browser type.
      */
     @BeforeSuite
     public void initializeDriver() {
@@ -143,7 +142,7 @@ public class BaseTest {
         }
 
         if (driver != null) {
-            driver.manage().timeouts().implicitlyWait(50, TimeUnit.SECONDS);
+            driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS); // Reduced implicit wait for better performance
             driver.manage().window().maximize();
             map.put("charan", driver);
 
@@ -153,19 +152,19 @@ public class BaseTest {
     }
 
     /**
-     * Initializes ChromeDriver with optimized options for CI/CD
+     * Initializes ChromeDriver with optimized options for CI/CD execution.
      */
     private WebDriver initializeChromeDriver() {
         WebDriverManager.chromedriver().setup();
         ChromeOptions options = new ChromeOptions();
-        options.addArguments("--no-sandbox");  // Prevents sandbox issues in CI/CD
-        options.addArguments("--disable-dev-shm-usage"); // Prevents shared memory issues
-        options.addArguments("--remote-allow-origins=*"); // Avoids remote connection issues
-        options.addArguments("--disable-gpu"); // Helps in headless mode
-        options.addArguments("--headless=new"); // Runs Chrome in headless mode
-        options.addArguments("--disable-popup-blocking"); // Blocks pop-ups
-        options.addArguments("--disable-extensions"); // Prevents extension conflicts
-        options.addArguments("--disable-background-timer-throttling"); // Avoids performance throttling
+        options.addArguments("--no-sandbox");
+        options.addArguments("--disable-dev-shm-usage");
+        options.addArguments("--remote-allow-origins=*");
+        options.addArguments("--disable-gpu");
+        options.addArguments("--headless=new");
+        options.addArguments("--disable-popup-blocking");
+        options.addArguments("--disable-extensions");
+        options.addArguments("--disable-background-timer-throttling");
         options.addArguments("--disable-backgrounding-occluded-windows");
         options.addArguments("--disable-renderer-backgrounding");
 
@@ -177,18 +176,18 @@ public class BaseTest {
     }
 
     /**
-     * Initializes FirefoxDriver with desired options
+     * Initializes FirefoxDriver with necessary configurations.
      */
     private WebDriver initializeFirefoxDriver() {
         WebDriverManager.firefoxdriver().setup();
         FirefoxOptions options = new FirefoxOptions();
-        options.addPreference("dom.webnotifications.enabled", false); // Block notifications
+        options.addPreference("dom.webnotifications.enabled", false);
         System.out.println("🚀 Firefox browser is launched with configured options.");
         return new FirefoxDriver(options);
     }
 
     /**
-     * Navigates to the specified URL
+     * Navigates to the specified URL.
      */
     public void navigateToURL(String url) {
         if (driver != null) {
@@ -199,14 +198,14 @@ public class BaseTest {
     }
 
     /**
-     * Returns the current WebDriver instance
+     * Returns the current WebDriver instance.
      */
     public WebDriver getDriver() {
         return driver;
     }
 
     /**
-     * Closes the browser window and cleans up resources
+     * Closes the browser window and cleans up resources.
      */
     @AfterSuite
     public void closeWindow() {
