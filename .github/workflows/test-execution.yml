@@ -19,6 +19,14 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Install Chrome & ChromeDriver
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y google-chrome-stable
+          CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d '.' -f 1)
+          sudo apt-get install -y chromium-chromedriver
+          echo "CHROME_DRIVER_PATH=/usr/lib/chromium-browser/chromedriver" >> $GITHUB_ENV
+
       - name: Cache Maven Dependencies
         uses: actions/cache@v3
         with:
@@ -27,26 +35,31 @@ jobs:
           restore-keys: ${{ runner.os }}-maven-
 
       - name: Run Tests with Maven
-        run: mvn clean test
-
-      - name: Generate and Upload Allure Report
         run: |
-          mvn allure:report
-          mkdir allure-results
-          cp -r target/allure-report/* allure-results/
-      
-      - name: Upload Allure Report as Artifact
+          mvn clean test -Dwebdriver.chrome.driver=$CHROME_DRIVER_PATH
+        continue-on-error: false  # Fails workflow if tests fail
+
+      - name: Generate Allure Report
+        run: mvn allure:report
+
+      - name: Upload Allure Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results
+          path: target/allure-results
+
+      - name: Upload Allure Report
         uses: actions/upload-artifact@v4
         with:
           name: allure-report
-          path: allure-results
+          path: target/allure-report
 
       - name: Send Email with Test Report
         run: |
           echo "Sending Email with Test Results"
-          # Your email script or integration
+          # Add your email sending script here
 
       - name: Send Google Chat Notification
         run: |
           echo "Sending Google Chat Notification"
-          # Your Google Chat webhook script
+          # Add your Google Chat webhook script here
