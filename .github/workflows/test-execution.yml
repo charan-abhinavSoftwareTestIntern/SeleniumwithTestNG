@@ -72,8 +72,7 @@ jobs:
           path: allure-results
 
       - name: Install Mail Utilities
-        run: |
-          sudo apt-get install -y mailutils
+        run: sudo apt-get install -y mailutils
 
       - name: Send Email Notification
         if: always()
