@@ -46,18 +46,17 @@ jobs:
 
       - name: Run Tests with Maven
         id: test_execution
-        run: |
-          mvn clean test || echo "TEST_FAILED=true" >> $GITHUB_ENV
+        run: mvn clean test
 
       - name: Install XML Utilities
         run: sudo apt-get update && sudo apt-get install -y libxml2-utils
 
-      - name: Extract Test Results
+      - name: Validate TestNG Results
         run: |
           XML_FILE="target/surefire-reports/testng-results.xml"
-          
+
           if [ ! -f "$XML_FILE" ]; then
-            echo "⚠️ testng-results.xml NOT FOUND! Tests may have failed before generating reports."
+            echo "⚠️ testng-results.xml NOT FOUND! Setting all results to 0."
             echo "PASSED=0" >> $GITHUB_ENV
             echo "FAILED=0" >> $GITHUB_ENV
             echo "SKIPPED=0" >> $GITHUB_ENV
@@ -66,7 +65,7 @@ jobs:
           fi
 
           echo "✅ testng-results.xml FOUND! Extracting test results..."
-          cat "$XML_FILE"  # Debug: Print XML content
+          cat "$XML_FILE"
 
           PASSED=$(xmllint --xpath "string(//testng-results/@passed)" "$XML_FILE" 2>/dev/null)
           FAILED=$(xmllint --xpath "string(//testng-results/@failed)" "$XML_FILE" 2>/dev/null)
@@ -77,15 +76,10 @@ jobs:
           SKIPPED=${SKIPPED:-0}
           TOTAL=$((PASSED + FAILED + SKIPPED))
 
-          echo "Extracted Results: ✅ Passed=$PASSED, ❌ Failed=$FAILED, ⚠️ Skipped=$SKIPPED, 📌 Total=$TOTAL"
-          
           echo "PASSED=$PASSED" >> $GITHUB_ENV
           echo "FAILED=$FAILED" >> $GITHUB_ENV
           echo "SKIPPED=$SKIPPED" >> $GITHUB_ENV
           echo "TOTAL=$TOTAL" >> $GITHUB_ENV
-
-      - name: Generate and Upload Allure Report
-        run: mvn allure:report || echo "Allure report generation failed!"
 
       - name: Upload Allure Report as Artifact
         if: always()
@@ -93,17 +87,6 @@ jobs:
         with:
           name: allure-report
           path: allure-results
-
-      - name: Install Mail Utilities
-        run: sudo apt-get install -y mailutils
-
-      - name: Send Email Notification
-        if: always()
-        run: |
-          SUBJECT="📝 TestNG Suite Execution Summary"
-          BODY="📊 Test Suite Execution Summary:\n✅ Passed: $PASSED\n❌ Failed: $FAILED\n⚠️ Skipped: $SKIPPED\n📌 Total: $TOTAL\n🔗 Allure Report: Attachments Included"
-
-          echo -e "$BODY" | mail -s "$SUBJECT" -a "From: ${{ secrets.EMAIL_USERNAME }}" ${{ secrets.RECIPIENT_EMAIL }}
 
       - name: Send Google Chat Notification
         if: always()
