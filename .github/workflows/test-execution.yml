@@ -51,22 +51,26 @@ jobs:
 
       - name: Extract Test Results
         run: |
-          if [[ -f target/surefire-reports/testng-results.xml ]]; then
-            PASSED=$(grep -oP '(?<=<passed>).*(?=</passed>)' target/surefire-reports/testng-results.xml | awk '{s+=$1} END {print s}')
-            FAILED=$(grep -oP '(?<=<failed>).*(?=</failed>)' target/surefire-reports/testng-results.xml | awk '{s+=$1} END {print s}')
-            SKIPPED=$(grep -oP '(?<=<skipped>).*(?=</skipped>)' target/surefire-reports/testng-results.xml | awk '{s+=$1} END {print s}')
-            TOTAL=$((PASSED + FAILED + SKIPPED))
+          XML_FILE="target/surefire-reports/testng-results.xml"
+          if [ -f "$XML_FILE" ]; then
+            PASSED=$(grep -oP '(?<=<passed>).*(?=</passed>)' $XML_FILE | awk '{s+=$1} END {print s}')
+            FAILED=$(grep -oP '(?<=<failed>).*(?=</failed>)' $XML_FILE | awk '{s+=$1} END {print s}')
+            SKIPPED=$(grep -oP '(?<=<skipped>).*(?=</skipped>)' $XML_FILE | awk '{s+=$1} END {print s}')
           else
+            echo "⚠️ testng-results.xml not found! Setting default values."
             PASSED=0
             FAILED=0
             SKIPPED=0
-            TOTAL=0
           fi
+
+          TOTAL=$((PASSED + FAILED + SKIPPED))
+
+          echo "Extracted Results: Passed=$PASSED, Failed=$FAILED, Skipped=$SKIPPED, Total=$TOTAL"
           
-          echo "PASSED=${PASSED:-0}" >> $GITHUB_ENV
-          echo "FAILED=${FAILED:-0}" >> $GITHUB_ENV
-          echo "SKIPPED=${SKIPPED:-0}" >> $GITHUB_ENV
-          echo "TOTAL=${TOTAL:-0}" >> $GITHUB_ENV
+          echo "PASSED=$PASSED" >> $GITHUB_ENV
+          echo "FAILED=$FAILED" >> $GITHUB_ENV
+          echo "SKIPPED=$SKIPPED" >> $GITHUB_ENV
+          echo "TOTAL=$TOTAL" >> $GITHUB_ENV
 
       - name: Generate and Upload Allure Report
         run: mvn allure:report || echo "Allure report generation failed!"
@@ -84,23 +88,19 @@ jobs:
       - name: Send Email Notification
         if: always()
         run: |
-          echo "PASSED=$PASSED, FAILED=$FAILED, SKIPPED=$SKIPPED, TOTAL=$TOTAL"
-
           SUBJECT="📝 TestNG Suite Execution Summary"
-          BODY="📊 Test Suite Execution Summary:\n✅ Passed: ${PASSED:-0}\n❌ Failed: ${FAILED:-0}\n⚠️ Skipped: ${SKIPPED:-0}\n📌 Total: ${TOTAL:-0}\n🔗 Allure Report: Attachments Included"
+          BODY="📊 Test Suite Execution Summary:\n✅ Passed: $PASSED\n❌ Failed: $FAILED\n⚠️ Skipped: $SKIPPED\n📌 Total: $TOTAL\n🔗 Allure Report: Attachments Included"
 
           echo -e "$BODY" | mail -s "$SUBJECT" -a "From: ${{ secrets.EMAIL_USERNAME }}" ${{ secrets.RECIPIENT_EMAIL }}
 
       - name: Send Google Chat Notification
         if: always()
         run: |
-          echo "PASSED=$PASSED, FAILED=$FAILED, SKIPPED=$SKIPPED, TOTAL=$TOTAL"
-
           CHAT_MESSAGE="📢 *Test Suite Execution Summary* 📢\n
-          ✅ *Passed:* ${PASSED:-0}\n
-          ❌ *Failed:* ${FAILED:-0}\n
-          ⚠️ *Skipped:* ${SKIPPED:-0}\n
-          📌 *Total:* ${TOTAL:-0}\n
+          ✅ *Passed:* $PASSED\n
+          ❌ *Failed:* $FAILED\n
+          ⚠️ *Skipped:* $SKIPPED\n
+          📌 *Total:* $TOTAL\n
           🔗 *Allure Report:* Attachments Included"
 
           curl -X POST -H "Content-Type: application/json" \
