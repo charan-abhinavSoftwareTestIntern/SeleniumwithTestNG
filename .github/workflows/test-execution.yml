@@ -49,6 +49,9 @@ jobs:
         run: |
           mvn clean test || echo "TEST_FAILED=true" >> $GITHUB_ENV
 
+      - name: Install XML Utilities
+        run: sudo apt-get update && sudo apt-get install -y libxml2-utils
+
       - name: Extract Test Results
         run: |
           XML_FILE="target/surefire-reports/testng-results.xml"
@@ -69,7 +72,6 @@ jobs:
           FAILED=$(xmllint --xpath "string(//testng-results/@failed)" "$XML_FILE" 2>/dev/null)
           SKIPPED=$(xmllint --xpath "string(//testng-results/@skipped)" "$XML_FILE" 2>/dev/null)
 
-          # Ensure variables have default values
           PASSED=${PASSED:-0}
           FAILED=${FAILED:-0}
           SKIPPED=${SKIPPED:-0}
