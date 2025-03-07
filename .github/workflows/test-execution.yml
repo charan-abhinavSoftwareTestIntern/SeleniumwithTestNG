@@ -51,7 +51,18 @@ jobs:
       - name: Install XML Utilities
         run: sudo apt-get update && sudo apt-get install -y libxml2-utils
 
-      - name: Validate TestNG Results
+      - name: Debug TestNG Results
+        run: |
+          echo "Checking for testng-results.xml..."
+          ls -lah target/surefire-reports/
+          if [ -f "target/surefire-reports/testng-results.xml" ]; then
+            echo "✅ testng-results.xml FOUND! Contents:"
+            cat target/surefire-reports/testng-results.xml
+          else
+            echo "❌ testng-results.xml NOT FOUND!"
+          fi
+
+      - name: Extract Test Results
         run: |
           XML_FILE="target/surefire-reports/testng-results.xml"
 
@@ -64,12 +75,9 @@ jobs:
             exit 0
           fi
 
-          echo "✅ testng-results.xml FOUND! Extracting test results..."
-          cat "$XML_FILE"
-
-          PASSED=$(xmllint --xpath "string(//testng-results/@passed)" "$XML_FILE" 2>/dev/null)
-          FAILED=$(xmllint --xpath "string(//testng-results/@failed)" "$XML_FILE" 2>/dev/null)
-          SKIPPED=$(xmllint --xpath "string(//testng-results/@skipped)" "$XML_FILE" 2>/dev/null)
+          PASSED=$(xmllint --xpath "string(//testng-results/@passed)" "$XML_FILE" 2>/dev/null || grep -oP '(?<=passed=")\d+' "$XML_FILE" | head -1)
+          FAILED=$(xmllint --xpath "string(//testng-results/@failed)" "$XML_FILE" 2>/dev/null || grep -oP '(?<=failed=")\d+' "$XML_FILE" | head -1)
+          SKIPPED=$(xmllint --xpath "string(//testng-results/@skipped)" "$XML_FILE" 2>/dev/null || grep -oP '(?<=skipped=")\d+' "$XML_FILE" | head -1)
 
           PASSED=${PASSED:-0}
           FAILED=${FAILED:-0}
@@ -81,23 +89,9 @@ jobs:
           echo "SKIPPED=$SKIPPED" >> $GITHUB_ENV
           echo "TOTAL=$TOTAL" >> $GITHUB_ENV
 
-      - name: Upload Allure Report as Artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: allure-report
-          path: allure-results
-
-      - name: Send Google Chat Notification
-        if: always()
+      - name: Debug Environment Variables
         run: |
-          CHAT_MESSAGE="📢 *Test Suite Execution Summary* 📢\n
-          ✅ *Passed:* $PASSED\n
-          ❌ *Failed:* $FAILED\n
-          ⚠️ *Skipped:* $SKIPPED\n
-          📌 *Total:* $TOTAL\n
-          🔗 *Allure Report:* Attachments Included"
-
-          curl -X POST -H "Content-Type: application/json" \
-            -d "{\"text\": \"$CHAT_MESSAGE\"}" \
-            "${{ secrets.GOOGLE_CHAT_WEBHOOK }}"
+          echo "✅ PASSED=$PASSED"
+          echo "❌ FAILED=$FAILED"
+          echo "⚠️ SKIPPED=$SKIPPED"
+          echo "📌 TOTAL=$TOTAL"
