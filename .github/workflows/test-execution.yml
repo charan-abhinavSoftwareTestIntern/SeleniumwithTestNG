@@ -19,7 +19,7 @@ jobs:
       - name: Install Dependencies (Chrome, ChromeDriver, Mailutils)
         run: |
           sudo apt-get update
-          sudo apt-get install -y google-chrome-stable libxml2-utils mailutils
+          sudo apt-get install -y google-chrome-stable libxml2-utils mailutils jq
           echo "✅ Dependencies Installed!"
           echo "📌 Chrome Version: $(google-chrome --version)"
 
@@ -52,11 +52,6 @@ jobs:
           echo "🚀 Running tests using testng.xml..."
           mvn clean test -Dsurefire.suiteXmlFiles=src/test/resources/testng.xml || true  # Prevents workflow failure
 
-      - name: Debug Test Results
-        run: |
-          ls -lh target/surefire-reports/
-          cat target/surefire-reports/testng-results.xml || echo "⚠️ testng-results.xml not found!"
-
       - name: Extract Test Results
         run: |
           XML_FILE="target/surefire-reports/testng-results.xml"
@@ -86,32 +81,29 @@ jobs:
           echo "SKIPPED=$SKIPPED" >> $GITHUB_ENV
           echo "TOTAL=$TOTAL" >> $GITHUB_ENV
 
-      - name: Verify Mail Command
+      - name: Generate Allure Report Link
         run: |
-          if ! command -v mail &> /dev/null; then
-            echo "❌ Mail command not found! Skipping email notification."
-            exit 1
-          else
-            echo "✅ Mail command found!"
-          fi
+          ALLURE_REPORT_URL="http://192.168.100.77:51643/index.html"
+          echo "ALLURE_REPORT_URL=$ALLURE_REPORT_URL" >> $GITHUB_ENV
+          echo "🔗 Allure Report: $ALLURE_REPORT_URL"
 
       - name: Send Email Notification
-        if: always()
+        if: always() && !cancelled()
         run: |
           SUBJECT="📝 TestNG Suite Execution Summary"
-          BODY="📊 Test Suite Execution Summary:\n\n✅ Passed: $PASSED\n❌ Failed: $FAILED\n⚠️ Skipped: $SKIPPED\n📌 Total: $TOTAL\n\n🔗 Allure Report: Attachments Included"
+          BODY="📊 Test Suite Execution Summary:\n\n✅ Passed: $PASSED\n❌ Failed: $FAILED\n⚠️ Skipped: $SKIPPED\n📌 Total: $TOTAL\n\n🔗 Allure Report: $ALLURE_REPORT_URL"
 
           echo -e "$BODY" | mail -s "$SUBJECT" ${{ secrets.RECIPIENT_EMAIL }}
 
       - name: Send Google Chat Notification
-        if: always()
+        if: always() && !cancelled()
         run: |
           CHAT_MESSAGE="📢 *Test Suite Execution Summary* 📢\n
           ✅ *Passed:* $PASSED\n
           ❌ *Failed:* $FAILED\n
           ⚠️ *Skipped:* $SKIPPED\n
           📌 *Total:* $TOTAL\n
-          🔗 *Allure Report:* Attachments Included"
+          🔗 *Allure Report:* $ALLURE_REPORT_URL"
 
           curl -X POST -H "Content-Type: application/json" \
             -d "{\"text\": \"$CHAT_MESSAGE\"}" \
