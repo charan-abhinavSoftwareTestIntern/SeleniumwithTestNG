@@ -20,16 +20,17 @@ jobs:
       - name: Install ChromeDriver (Matching Version)
         run: |
           CHROME_VERSION=$(google-chrome --version | awk '{print $3}')
-          CHROMEDRIVER_VERSION=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json" | jq -r ".channels.Stable.version")
+          CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION")
+          
           if [[ -z "$CHROMEDRIVER_VERSION" ]]; then
             echo "Failed to get ChromeDriver version, using latest version instead."
             CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE")
           fi
+          
           echo "Downloading ChromeDriver version: $CHROMEDRIVER_VERSION"
-          DOWNLOAD_URL=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json" | jq -r ".channels.Stable.downloads.chromedriver[] | select(.platform == \"linux64\").url")
-          wget -q "$DOWNLOAD_URL" -O chromedriver-linux64.zip
-          unzip chromedriver-linux64.zip
-          sudo mv chromedriver-linux64/chromedriver /usr/local/bin/
+          wget -q "https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip" -O chromedriver.zip
+          unzip chromedriver.zip
+          sudo mv chromedriver /usr/local/bin/
           sudo chmod +x /usr/local/bin/chromedriver
           echo "ChromeDriver Version: $(chromedriver --version)"
 
@@ -74,18 +75,18 @@ jobs:
           SUBJECT="📝 TestNG Suite Execution Summary"
           BODY="📊 Test Suite Execution Summary:\n✅ Passed: $PASSED\n❌ Failed: $FAILED\n⚠️ Skipped: $SKIPPED\n📌 Total: $TOTAL\n🔗 Allure Report: Attachments Included"
 
-          echo -e "Subject: $SUBJECT\n\n$BODY" | \
-          sendmail -S ${{ secrets.SMTP_SERVER }} \
-                   -p ${{ secrets.SMTP_PORT }} \
-                   -au ${{ secrets.EMAIL_USERNAME }} \
-                   -ap ${{ secrets.EMAIL_PASSWORD }} \
-                   charanabhinav.pydimarri@optimworks.com
+          echo -e "Subject: $SUBJECT\n\n$BODY" | sendmail -t \
+            -S ${{ secrets.SMTP_SERVER }} \
+            -p ${{ secrets.SMTP_PORT }} \
+            -au ${{ secrets.EMAIL_USERNAME }} \
+            -ap ${{ secrets.EMAIL_PASSWORD }} \
+            charanabhinav.pydimarri@optimworks.com
 
       # **Ensure Google Chat Notification is Always Sent**
       - name: Send Google Chat Notification
         if: always()
         run: |
-          CHAT_MESSAGE="📊 Test Suite Execution Summary:\n✅ Passed: $PASSED\n❌ Failed: $FAILED\n⚠️ Skipped: $SKIPPED\n📌 Total: $TOTAL\n🔗 Allure Report: Attachments Included"
+          CHAT_MESSAGE="📊 Test Suite Execution Summary:\\n✅ Passed: $PASSED\\n❌ Failed: $FAILED\\n⚠️ Skipped: $SKIPPED\\n📌 Total: $TOTAL\\n🔗 Allure Report: Attachments Included"
 
           echo "Sending Google Chat notification..."
           curl -X POST -H "Content-Type: application/json" \
