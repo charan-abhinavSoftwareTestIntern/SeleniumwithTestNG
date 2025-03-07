@@ -24,7 +24,12 @@ jobs:
         run: |
           CHROMEDRIVER_VERSION=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json" | jq -r ".channels.Stable.version")
           DOWNLOAD_URL=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json" | jq -r ".channels.Stable.downloads.chromedriver[] | select(.platform == \"linux64\").url")
-          
+
+          if [[ -z "$DOWNLOAD_URL" ]]; then
+            echo "ChromeDriver download URL not found!"
+            exit 1
+          fi
+
           echo "Downloading ChromeDriver version: $CHROMEDRIVER_VERSION"
           wget -q "$DOWNLOAD_URL" -O chromedriver-linux64.zip
           unzip chromedriver-linux64.zip
@@ -50,7 +55,7 @@ jobs:
           FAILED=$(grep -oP '(?<=<failed>).*(?=</failed>)' target/surefire-reports/testng-results.xml | awk '{s+=$1} END {print s}')
           SKIPPED=$(grep -oP '(?<=<skipped>).*(?=</skipped>)' target/surefire-reports/testng-results.xml | awk '{s+=$1} END {print s}')
           TOTAL=$((PASSED + FAILED + SKIPPED))
-          
+
           echo "PASSED=$PASSED" >> $GITHUB_ENV
           echo "FAILED=$FAILED" >> $GITHUB_ENV
           echo "SKIPPED=$SKIPPED" >> $GITHUB_ENV
@@ -66,22 +71,28 @@ jobs:
           name: allure-report
           path: allure-results
 
+      - name: Install Mail Utilities
+        run: |
+          sudo apt-get install -y mailutils
+
       - name: Send Email Notification
         if: always()
         run: |
           SUBJECT="📝 TestNG Suite Execution Summary"
           BODY="📊 Test Suite Execution Summary:\n✅ Passed: $PASSED\n❌ Failed: $FAILED\n⚠️ Skipped: $SKIPPED\n📌 Total: $TOTAL\n🔗 Allure Report: Attachments Included"
-          echo -e "Subject: $SUBJECT\n\n$BODY" | sendmail -t \
-            -S ${{ secrets.SMTP_SERVER }} \
-            -p ${{ secrets.SMTP_PORT }} \
-            -au ${{ secrets.EMAIL_USERNAME }} \
-            -ap ${{ secrets.EMAIL_PASSWORD }} \
-            charanabhinav.pydimarri@optimworks.com
+
+          echo -e "$BODY" | mail -s "$SUBJECT" -a "From: ${{ secrets.EMAIL_USERNAME }}" ${{ secrets.RECIPIENT_EMAIL }}
 
       - name: Send Google Chat Notification
         if: always()
         run: |
-          CHAT_MESSAGE="📊 Test Suite Execution Summary:\n✅ Passed: $PASSED\n❌ Failed: $FAILED\n⚠️ Skipped: $SKIPPED\n📌 Total: $TOTAL\n🔗 Allure Report: Attachments Included"
+          CHAT_MESSAGE="📢 *Test Suite Execution Summary* 📢\n
+          ✅ *Passed:* $PASSED\n
+          ❌ *Failed:* $FAILED\n
+          ⚠️ *Skipped:* $SKIPPED\n
+          📌 *Total:* $TOTAL\n
+          🔗 *Allure Report:* Attachments Included"
+
           curl -X POST -H "Content-Type: application/json" \
             -d "{\"text\": \"$CHAT_MESSAGE\"}" \
             "${{ secrets.GOOGLE_CHAT_WEBHOOK }}"
