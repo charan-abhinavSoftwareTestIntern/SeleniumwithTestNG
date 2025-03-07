@@ -25,6 +25,12 @@ jobs:
         run: |
           CHROMEDRIVER_VERSION=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json" | jq -r ".channels.Stable.version")
           DOWNLOAD_URL=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json" | jq -r ".channels.Stable.downloads.chromedriver[] | select(.platform == \"linux64\").url")
+
+          if [ -z "$DOWNLOAD_URL" ]; then
+            echo "❌ Failed to fetch ChromeDriver URL"
+            exit 1
+          fi
+
           wget -q "$DOWNLOAD_URL" -O chromedriver-linux64.zip
           unzip chromedriver-linux64.zip
           sudo mv chromedriver-linux64/chromedriver /usr/local/bin/
@@ -40,7 +46,12 @@ jobs:
 
       - name: Run Tests with Maven
         id: test_execution
-        run: mvn clean test || true  # Prevent workflow failure due to test failures
+        run: |
+          echo "🚀 Running tests using testng.xml..."
+          mvn clean test -Dsurefire.suiteXmlFiles=testng.xml || true  # Prevents workflow failure
+
+      - name: Debug Test Order
+        run: cat target/surefire-reports/testng-results.xml || echo "⚠️ testng-results.xml not found!"
 
       - name: Extract Test Results
         run: |
@@ -55,7 +66,7 @@ jobs:
             exit 0
           fi
 
-          echo "✅ testng-results.xml FOUND! Extracting test results..."
+          echo "✅ Extracting test results from testng-results.xml..."
           cat "$XML_FILE"  # Debugging: Print XML content
 
           PASSED=$(xmllint --xpath "string(//testng-results/@passed)" "$XML_FILE" 2>/dev/null || echo "0")
@@ -74,7 +85,7 @@ jobs:
       - name: Verify Mail Command
         run: |
           if ! command -v mail &> /dev/null; then
-            echo "❌ Mail command not found! Exiting email step."
+            echo "❌ Mail command not found! Skipping email notification."
             exit 1
           else
             echo "✅ Mail command found!"
