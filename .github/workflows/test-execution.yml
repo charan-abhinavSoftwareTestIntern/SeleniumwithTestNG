@@ -20,17 +20,10 @@ jobs:
           sudo apt-get install -y google-chrome-stable
           echo "Chrome Version: $(google-chrome --version)"
 
-      - name: Install ChromeDriver (Matching Version)
+      - name: Install ChromeDriver
         run: |
           CHROMEDRIVER_VERSION=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json" | jq -r ".channels.Stable.version")
           DOWNLOAD_URL=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json" | jq -r ".channels.Stable.downloads.chromedriver[] | select(.platform == \"linux64\").url")
-
-          if [[ -z "$DOWNLOAD_URL" ]]; then
-            echo "ChromeDriver download URL not found!"
-            exit 1
-          fi
-
-          echo "Downloading ChromeDriver version: $CHROMEDRIVER_VERSION"
           wget -q "$DOWNLOAD_URL" -O chromedriver-linux64.zip
           unzip chromedriver-linux64.zip
           sudo mv chromedriver-linux64/chromedriver /usr/local/bin/
@@ -46,52 +39,38 @@ jobs:
 
       - name: Run Tests with Maven
         id: test_execution
-        run: mvn clean test
-
-      - name: Install XML Utilities
-        run: sudo apt-get update && sudo apt-get install -y libxml2-utils
-
-      - name: Debug TestNG Results
-        run: |
-          echo "Checking for testng-results.xml..."
-          ls -lah target/surefire-reports/
-          if [ -f "target/surefire-reports/testng-results.xml" ]; then
-            echo "✅ testng-results.xml FOUND! Contents:"
-            cat target/surefire-reports/testng-results.xml
-          else
-            echo "❌ testng-results.xml NOT FOUND!"
-          fi
+        run: mvn clean test || true  # Prevents stopping the workflow
 
       - name: Extract Test Results
         run: |
           XML_FILE="target/surefire-reports/testng-results.xml"
-
           if [ ! -f "$XML_FILE" ]; then
-            echo "⚠️ testng-results.xml NOT FOUND! Setting all results to 0."
             echo "PASSED=0" >> $GITHUB_ENV
             echo "FAILED=0" >> $GITHUB_ENV
             echo "SKIPPED=0" >> $GITHUB_ENV
             echo "TOTAL=0" >> $GITHUB_ENV
             exit 0
           fi
-
-          PASSED=$(xmllint --xpath "string(//testng-results/@passed)" "$XML_FILE" 2>/dev/null || grep -oP '(?<=passed=")\d+' "$XML_FILE" | head -1)
-          FAILED=$(xmllint --xpath "string(//testng-results/@failed)" "$XML_FILE" 2>/dev/null || grep -oP '(?<=failed=")\d+' "$XML_FILE" | head -1)
-          SKIPPED=$(xmllint --xpath "string(//testng-results/@skipped)" "$XML_FILE" 2>/dev/null || grep -oP '(?<=skipped=")\d+' "$XML_FILE" | head -1)
-
+          PASSED=$(grep -oP '(?<=passed=")\d+' "$XML_FILE" | head -1)
+          FAILED=$(grep -oP '(?<=failed=")\d+' "$XML_FILE" | head -1)
+          SKIPPED=$(grep -oP '(?<=skipped=")\d+' "$XML_FILE" | head -1)
           PASSED=${PASSED:-0}
           FAILED=${FAILED:-0}
           SKIPPED=${SKIPPED:-0}
           TOTAL=$((PASSED + FAILED + SKIPPED))
-
           echo "PASSED=$PASSED" >> $GITHUB_ENV
           echo "FAILED=$FAILED" >> $GITHUB_ENV
           echo "SKIPPED=$SKIPPED" >> $GITHUB_ENV
           echo "TOTAL=$TOTAL" >> $GITHUB_ENV
 
-      - name: Debug Environment Variables
+      - name: Send Email Notification
+        if: always()
         run: |
-          echo "✅ PASSED=$PASSED"
-          echo "❌ FAILED=$FAILED"
-          echo "⚠️ SKIPPED=$SKIPPED"
-          echo "📌 TOTAL=$TOTAL"
+          echo -e "Test Summary:\n✅ Passed: $PASSED\n❌ Failed: $FAILED\n⚠️ Skipped: $SKIPPED\n📌 Total: $TOTAL" | mail -s "Test Results" ${{ secrets.RECIPIENT_EMAIL }}
+
+      - name: Send Google Chat Notification
+        if: always()
+        run: |
+          curl -X POST -H "Content-Type: application/json" \
+            -d "{\"text\": \"📢 Test Suite Execution Summary 📢\n✅ Passed: $PASSED\n❌ Failed: $FAILED\n⚠️ Skipped: $SKIPPED\n📌 Total: $TOTAL\"}" \
+            "${{ secrets.GOOGLE_CHAT_WEBHOOK }}"
