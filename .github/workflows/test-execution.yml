@@ -53,6 +53,9 @@ jobs:
         run: |
           XML_FILE="target/surefire-reports/testng-results.xml"
           if [ -f "$XML_FILE" ]; then
+            echo "✅ testng-results.xml file found!"
+            cat "$XML_FILE" # Debug: Print XML content
+
             PASSED=$(grep -oP '(?<=<passed>).*(?=</passed>)' $XML_FILE | awk '{s+=$1} END {print s}')
             FAILED=$(grep -oP '(?<=<failed>).*(?=</failed>)' $XML_FILE | awk '{s+=$1} END {print s}')
             SKIPPED=$(grep -oP '(?<=<skipped>).*(?=</skipped>)' $XML_FILE | awk '{s+=$1} END {print s}')
@@ -63,9 +66,13 @@ jobs:
             SKIPPED=0
           fi
 
+          # Ensure variables are not empty
+          PASSED=${PASSED:-0}
+          FAILED=${FAILED:-0}
+          SKIPPED=${SKIPPED:-0}
           TOTAL=$((PASSED + FAILED + SKIPPED))
 
-          echo "Extracted Results: Passed=$PASSED, Failed=$FAILED, Skipped=$SKIPPED, Total=$TOTAL"
+          echo "Extracted Results: ✅ Passed=$PASSED, ❌ Failed=$FAILED, ⚠️ Skipped=$SKIPPED, 📌 Total=$TOTAL"
           
           echo "PASSED=$PASSED" >> $GITHUB_ENV
           echo "FAILED=$FAILED" >> $GITHUB_ENV
