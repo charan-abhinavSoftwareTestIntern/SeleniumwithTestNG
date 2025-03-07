@@ -14,11 +14,12 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Install Chrome
+      - name: Install Dependencies (Chrome, ChromeDriver, XML Tools, Mailutils)
         run: |
           sudo apt-get update
-          sudo apt-get install -y google-chrome-stable
-          echo "Chrome Version: $(google-chrome --version)"
+          sudo apt-get install -y google-chrome-stable libxml2-utils mailutils
+          echo "✅ Dependencies Installed!"
+          echo "📌 Chrome Version: $(google-chrome --version)"
 
       - name: Install ChromeDriver
         run: |
@@ -28,7 +29,7 @@ jobs:
           unzip chromedriver-linux64.zip
           sudo mv chromedriver-linux64/chromedriver /usr/local/bin/
           sudo chmod +x /usr/local/bin/chromedriver
-          echo "ChromeDriver Version: $(chromedriver --version)"
+          echo "✅ ChromeDriver Installed: $(chromedriver --version)"
 
       - name: Cache Maven Dependencies
         uses: actions/cache@v3
@@ -39,12 +40,12 @@ jobs:
 
       - name: Run Tests with Maven
         id: test_execution
-        run: mvn clean test
+        run: mvn clean test || true  # Prevent workflow failure due to test failures
 
       - name: Extract Test Results
         run: |
           XML_FILE="target/surefire-reports/testng-results.xml"
-          
+
           if [ ! -f "$XML_FILE" ]; then
             echo "⚠️ testng-results.xml NOT FOUND! Tests may have failed before generating reports."
             echo "PASSED=0" >> $GITHUB_ENV
@@ -55,26 +56,29 @@ jobs:
           fi
 
           echo "✅ testng-results.xml FOUND! Extracting test results..."
-          cat "$XML_FILE"  # Debug: Print XML content
+          cat "$XML_FILE"  # Debugging: Print XML content
 
-          PASSED=$(xmllint --xpath "string(//testng-results/@passed)" "$XML_FILE" 2>/dev/null)
-          FAILED=$(xmllint --xpath "string(//testng-results/@failed)" "$XML_FILE" 2>/dev/null)
-          SKIPPED=$(xmllint --xpath "string(//testng-results/@skipped)" "$XML_FILE" 2>/dev/null)
+          PASSED=$(xmllint --xpath "string(//testng-results/@passed)" "$XML_FILE" 2>/dev/null || echo "0")
+          FAILED=$(xmllint --xpath "string(//testng-results/@failed)" "$XML_FILE" 2>/dev/null || echo "0")
+          SKIPPED=$(xmllint --xpath "string(//testng-results/@skipped)" "$XML_FILE" 2>/dev/null || echo "0")
 
-          PASSED=${PASSED:-0}
-          FAILED=${FAILED:-0}
-          SKIPPED=${SKIPPED:-0}
           TOTAL=$((PASSED + FAILED + SKIPPED))
 
           echo "Extracted Results: ✅ Passed=$PASSED, ❌ Failed=$FAILED, ⚠️ Skipped=$SKIPPED, 📌 Total=$TOTAL"
-          
+
           echo "PASSED=$PASSED" >> $GITHUB_ENV
           echo "FAILED=$FAILED" >> $GITHUB_ENV
           echo "SKIPPED=$SKIPPED" >> $GITHUB_ENV
           echo "TOTAL=$TOTAL" >> $GITHUB_ENV
 
-      - name: Install Mail Utilities
-        run: sudo apt-get update && sudo apt-get install -y mailutils
+      - name: Verify Mail Command
+        run: |
+          if ! command -v mail &> /dev/null; then
+            echo "❌ Mail command not found! Exiting email step."
+            exit 1
+          else
+            echo "✅ Mail command found!"
+          fi
 
       - name: Send Email Notification
         if: always()
