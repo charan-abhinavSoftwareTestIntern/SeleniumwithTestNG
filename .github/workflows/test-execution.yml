@@ -1,5 +1,6 @@
 on:
   workflow_dispatch:
+
 jobs:
   run-tests:
     runs-on: ubuntu-latest
@@ -21,18 +22,13 @@ jobs:
 
       - name: Install ChromeDriver (Matching Version)
         run: |
-          CHROME_VERSION=$(google-chrome --version | awk '{print $3}')
-          CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION")
-          
-          if [[ -z "$CHROMEDRIVER_VERSION" ]]; then
-            echo "Failed to get ChromeDriver version, using latest version instead."
-            CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE")
-          fi
+          CHROMEDRIVER_VERSION=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json" | jq -r ".channels.Stable.version")
+          DOWNLOAD_URL=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json" | jq -r ".channels.Stable.downloads.chromedriver[] | select(.platform == \"linux64\").url")
           
           echo "Downloading ChromeDriver version: $CHROMEDRIVER_VERSION"
-          wget -q "https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip" -O chromedriver.zip
-          unzip chromedriver.zip
-          sudo mv chromedriver /usr/local/bin/
+          wget -q "$DOWNLOAD_URL" -O chromedriver-linux64.zip
+          unzip chromedriver-linux64.zip
+          sudo mv chromedriver-linux64/chromedriver /usr/local/bin/
           sudo chmod +x /usr/local/bin/chromedriver
           echo "ChromeDriver Version: $(chromedriver --version)"
 
@@ -50,11 +46,11 @@ jobs:
 
       - name: Extract Test Results
         run: |
-          PASSED=$(grep -oP '(?<=Tests run: )\d+' target/surefire-reports/testng-results.xml | awk '{s+=$1} END {print s}')
-          FAILED=$(grep -oP '(?<=Failures: )\d+' target/surefire-reports/testng-results.xml | awk '{s+=$1} END {print s}')
-          SKIPPED=$(grep -oP '(?<=Skipped: )\d+' target/surefire-reports/testng-results.xml | awk '{s+=$1} END {print s}')
+          PASSED=$(grep -oP '(?<=<passed>).*(?=</passed>)' target/surefire-reports/testng-results.xml | awk '{s+=$1} END {print s}')
+          FAILED=$(grep -oP '(?<=<failed>).*(?=</failed>)' target/surefire-reports/testng-results.xml | awk '{s+=$1} END {print s}')
+          SKIPPED=$(grep -oP '(?<=<skipped>).*(?=</skipped>)' target/surefire-reports/testng-results.xml | awk '{s+=$1} END {print s}')
           TOTAL=$((PASSED + FAILED + SKIPPED))
-
+          
           echo "PASSED=$PASSED" >> $GITHUB_ENV
           echo "FAILED=$FAILED" >> $GITHUB_ENV
           echo "SKIPPED=$SKIPPED" >> $GITHUB_ENV
@@ -70,13 +66,11 @@ jobs:
           name: allure-report
           path: allure-results
 
-      # **Ensure Email Notification is Always Sent**
       - name: Send Email Notification
         if: always()
         run: |
           SUBJECT="📝 TestNG Suite Execution Summary"
           BODY="📊 Test Suite Execution Summary:\n✅ Passed: $PASSED\n❌ Failed: $FAILED\n⚠️ Skipped: $SKIPPED\n📌 Total: $TOTAL\n🔗 Allure Report: Attachments Included"
-
           echo -e "Subject: $SUBJECT\n\n$BODY" | sendmail -t \
             -S ${{ secrets.SMTP_SERVER }} \
             -p ${{ secrets.SMTP_PORT }} \
@@ -84,13 +78,10 @@ jobs:
             -ap ${{ secrets.EMAIL_PASSWORD }} \
             charanabhinav.pydimarri@optimworks.com
 
-      # **Ensure Google Chat Notification is Always Sent**
       - name: Send Google Chat Notification
         if: always()
         run: |
-          CHAT_MESSAGE="📊 Test Suite Execution Summary:\\n✅ Passed: $PASSED\\n❌ Failed: $FAILED\\n⚠️ Skipped: $SKIPPED\\n📌 Total: $TOTAL\\n🔗 Allure Report: Attachments Included"
-
-          echo "Sending Google Chat notification..."
+          CHAT_MESSAGE="📊 Test Suite Execution Summary:\n✅ Passed: $PASSED\n❌ Failed: $FAILED\n⚠️ Skipped: $SKIPPED\n📌 Total: $TOTAL\n🔗 Allure Report: Attachments Included"
           curl -X POST -H "Content-Type: application/json" \
             -d "{\"text\": \"$CHAT_MESSAGE\"}" \
             "${{ secrets.GOOGLE_CHAT_WEBHOOK }}"
