@@ -65,13 +65,9 @@ jobs:
             exit 0
           fi
 
-          echo "✅ Extracting test results from testng-results.xml..."
-          cat "$XML_FILE"  # Debugging: Print XML content
-
           PASSED=$(xmllint --xpath "string(//testng-results/@passed)" "$XML_FILE" 2>/dev/null || echo "0")
           FAILED=$(xmllint --xpath "string(//testng-results/@failed)" "$XML_FILE" 2>/dev/null || echo "0")
           SKIPPED=$(xmllint --xpath "string(//testng-results/@skipped)" "$XML_FILE" 2>/dev/null || echo "0")
-
           TOTAL=$((PASSED + FAILED + SKIPPED))
 
           echo "Extracted Results: ✅ Passed=$PASSED, ❌ Failed=$FAILED, ⚠️ Skipped=$SKIPPED, 📌 Total=$TOTAL"
@@ -87,16 +83,26 @@ jobs:
           echo "ALLURE_REPORT_URL=$ALLURE_REPORT_URL" >> $GITHUB_ENV
           echo "🔗 Allure Report: $ALLURE_REPORT_URL"
 
+      - name: Debug Mail Command
+        run: |
+          if ! command -v mail &> /dev/null; then
+            echo "❌ Mail command not found! Email will not be sent."
+            exit 1
+          else
+            echo "✅ Mail command is available!"
+          fi
+
       - name: Send Email Notification
-        if: always() && !cancelled()
+        if: success() || failure()
         run: |
           SUBJECT="📝 TestNG Suite Execution Summary"
           BODY="📊 Test Suite Execution Summary:\n\n✅ Passed: $PASSED\n❌ Failed: $FAILED\n⚠️ Skipped: $SKIPPED\n📌 Total: $TOTAL\n\n🔗 Allure Report: $ALLURE_REPORT_URL"
 
           echo -e "$BODY" | mail -s "$SUBJECT" ${{ secrets.RECIPIENT_EMAIL }}
+          echo "📧 Email sent to: ${{ secrets.RECIPIENT_EMAIL }}"
 
-      - name: Send Google Chat Notification
-        if: always() && !cancelled()
+      - name: Send Google Chat Notification (Single Message)
+        if: success() || failure()
         run: |
           CHAT_MESSAGE="📢 *Test Suite Execution Summary* 📢\n
           ✅ *Passed:* $PASSED\n
@@ -108,3 +114,5 @@ jobs:
           curl -X POST -H "Content-Type: application/json" \
             -d "{\"text\": \"$CHAT_MESSAGE\"}" \
             "${{ secrets.GOOGLE_CHAT_WEBHOOK }}"
+
+          echo "📢 Google Chat notification sent successfully!"
