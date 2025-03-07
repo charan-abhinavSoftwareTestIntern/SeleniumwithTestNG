@@ -1,5 +1,3 @@
-name: Run Selenium Tests
-
 on:
   workflow_dispatch:
 
@@ -16,28 +14,28 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Install Dependencies (Chrome, ChromeDriver, Sendmail)
+      - name: Install Chrome
         run: |
           sudo apt-get update
-          sudo apt-get install -y google-chrome-stable libxml2-utils sendmail jq
-          echo "✅ Dependencies Installed!"
-          echo "📌 Chrome Version: $(google-chrome --version)"
+          sudo apt-get install -y google-chrome-stable
+          echo "Chrome Version: $(google-chrome --version)"
 
-      - name: Install ChromeDriver
+      - name: Install ChromeDriver (Matching Version)
         run: |
           CHROMEDRIVER_VERSION=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json" | jq -r ".channels.Stable.version")
           DOWNLOAD_URL=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json" | jq -r ".channels.Stable.downloads.chromedriver[] | select(.platform == \"linux64\").url")
 
-          if [ -z "$DOWNLOAD_URL" ]; then
-            echo "❌ Failed to fetch ChromeDriver URL"
+          if [[ -z "$DOWNLOAD_URL" ]]; then
+            echo "ChromeDriver download URL not found!"
             exit 1
           fi
 
-          wget -q "$DOWNLOAD_URL" -O chromedriver.zip
-          unzip chromedriver.zip
+          echo "Downloading ChromeDriver version: $CHROMEDRIVER_VERSION"
+          wget -q "$DOWNLOAD_URL" -O chromedriver-linux64.zip
+          unzip chromedriver-linux64.zip
           sudo mv chromedriver-linux64/chromedriver /usr/local/bin/
           sudo chmod +x /usr/local/bin/chromedriver
-          echo "✅ ChromeDriver Installed: $(chromedriver --version)"
+          echo "ChromeDriver Version: $(chromedriver --version)"
 
       - name: Cache Maven Dependencies
         uses: actions/cache@v3
@@ -49,76 +47,62 @@ jobs:
       - name: Run Tests with Maven
         id: test_execution
         run: |
-          echo "🚀 Running tests using testng.xml..."
-          mvn clean test -Dsurefire.suiteXmlFiles=src/test/resources/testng.xml || true
+          mvn clean test || echo "TEST_FAILED=true" >> $GITHUB_ENV
 
       - name: Extract Test Results
         run: |
-          XML_FILE="target/surefire-reports/testng-results.xml"
-
-          if [ ! -f "$XML_FILE" ]; then
-            echo "⚠️ testng-results.xml NOT FOUND! Tests may have failed before generating reports."
-            echo "PASSED=0" >> $GITHUB_ENV
-            echo "FAILED=0" >> $GITHUB_ENV
-            echo "SKIPPED=0" >> $GITHUB_ENV
-            echo "TOTAL=0" >> $GITHUB_ENV
-            exit 0
-          fi
-
-          PASSED=$(xmllint --xpath "string(//testng-results/@passed)" "$XML_FILE" 2>/dev/null || echo "0")
-          FAILED=$(xmllint --xpath "string(//testng-results/@failed)" "$XML_FILE" 2>/dev/null || echo "0")
-          SKIPPED=$(xmllint --xpath "string(//testng-results/@skipped)" "$XML_FILE" 2>/dev/null || echo "0")
-          TOTAL=$((PASSED + FAILED + SKIPPED))
-
-          echo "Extracted Results: ✅ Passed=$PASSED, ❌ Failed=$FAILED, ⚠️ Skipped=$SKIPPED, 📌 Total=$TOTAL"
-
-          echo "PASSED=$PASSED" >> $GITHUB_ENV
-          echo "FAILED=$FAILED" >> $GITHUB_ENV
-          echo "SKIPPED=$SKIPPED" >> $GITHUB_ENV
-          echo "TOTAL=$TOTAL" >> $GITHUB_ENV
-
-      - name: Generate Allure Report Link
-        run: |
-          ALLURE_REPORT_URL="http://192.168.100.77:51643/index.html"
-          echo "ALLURE_REPORT_URL=$ALLURE_REPORT_URL" >> $GITHUB_ENV
-          echo "🔗 Allure Report: $ALLURE_REPORT_URL"
-
-      - name: Debug Mail Command
-        run: |
-          if ! command -v sendmail &> /dev/null; then
-            echo "❌ sendmail command not found! Email will not be sent."
-            exit 1
+          if [[ -f target/surefire-reports/testng-results.xml ]]; then
+            PASSED=$(grep -oP '(?<=<passed>).*(?=</passed>)' target/surefire-reports/testng-results.xml | awk '{s+=$1} END {print s}')
+            FAILED=$(grep -oP '(?<=<failed>).*(?=</failed>)' target/surefire-reports/testng-results.xml | awk '{s+=$1} END {print s}')
+            SKIPPED=$(grep -oP '(?<=<skipped>).*(?=</skipped>)' target/surefire-reports/testng-results.xml | awk '{s+=$1} END {print s}')
+            TOTAL=$((PASSED + FAILED + SKIPPED))
           else
-            echo "✅ sendmail is available!"
+            PASSED=0
+            FAILED=0
+            SKIPPED=0
+            TOTAL=0
           fi
+          
+          echo "PASSED=${PASSED:-0}" >> $GITHUB_ENV
+          echo "FAILED=${FAILED:-0}" >> $GITHUB_ENV
+          echo "SKIPPED=${SKIPPED:-0}" >> $GITHUB_ENV
+          echo "TOTAL=${TOTAL:-0}" >> $GITHUB_ENV
+
+      - name: Generate and Upload Allure Report
+        run: mvn allure:report || echo "Allure report generation failed!"
+
+      - name: Upload Allure Report as Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report
+          path: allure-results
+
+      - name: Install Mail Utilities
+        run: sudo apt-get install -y mailutils
 
       - name: Send Email Notification
-        if: success() || failure()
+        if: always()
         run: |
+          echo "PASSED=$PASSED, FAILED=$FAILED, SKIPPED=$SKIPPED, TOTAL=$TOTAL"
+
           SUBJECT="📝 TestNG Suite Execution Summary"
-          BODY="📊 Test Suite Execution Summary:\n\n✅ Passed: $PASSED\n❌ Failed: $FAILED\n⚠️ Skipped: $SKIPPED\n📌 Total: $TOTAL\n\n🔗 Allure Report: $ALLURE_REPORT_URL"
+          BODY="📊 Test Suite Execution Summary:\n✅ Passed: ${PASSED:-0}\n❌ Failed: ${FAILED:-0}\n⚠️ Skipped: ${SKIPPED:-0}\n📌 Total: ${TOTAL:-0}\n🔗 Allure Report: Attachments Included"
 
-          echo -e "To: ${{ secrets.RECIPIENT_EMAIL }}\nSubject: $SUBJECT\n\n$BODY" | sendmail -t
-          echo "📧 Email sent to: ${{ secrets.RECIPIENT_EMAIL }}"
+          echo -e "$BODY" | mail -s "$SUBJECT" -a "From: ${{ secrets.EMAIL_USERNAME }}" ${{ secrets.RECIPIENT_EMAIL }}
 
-      - name: Send Google Chat Notification (Single Message)
-        if: success() || failure()
+      - name: Send Google Chat Notification
+        if: always()
         run: |
-          if [ -f "/tmp/chat_message_sent" ]; then
-            echo "📢 Google Chat message already sent. Skipping duplicate notification."
-            exit 0
-          fi
+          echo "PASSED=$PASSED, FAILED=$FAILED, SKIPPED=$SKIPPED, TOTAL=$TOTAL"
 
           CHAT_MESSAGE="📢 *Test Suite Execution Summary* 📢\n
-          ✅ *Passed:* $PASSED\n
-          ❌ *Failed:* $FAILED\n
-          ⚠️ *Skipped:* $SKIPPED\n
-          📌 *Total:* $TOTAL\n
-          🔗 *Allure Report:* $ALLURE_REPORT_URL"
+          ✅ *Passed:* ${PASSED:-0}\n
+          ❌ *Failed:* ${FAILED:-0}\n
+          ⚠️ *Skipped:* ${SKIPPED:-0}\n
+          📌 *Total:* ${TOTAL:-0}\n
+          🔗 *Allure Report:* Attachments Included"
 
           curl -X POST -H "Content-Type: application/json" \
             -d "{\"text\": \"$CHAT_MESSAGE\"}" \
             "${{ secrets.GOOGLE_CHAT_WEBHOOK }}"
-
-          echo "📢 Google Chat notification sent successfully!"
-          touch /tmp/chat_message_sent
