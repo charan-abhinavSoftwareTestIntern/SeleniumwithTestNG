@@ -39,38 +39,61 @@ jobs:
 
       - name: Run Tests with Maven
         id: test_execution
-        run: mvn clean test || true  # Prevents stopping the workflow
+        run: mvn clean test
 
       - name: Extract Test Results
         run: |
           XML_FILE="target/surefire-reports/testng-results.xml"
+          
           if [ ! -f "$XML_FILE" ]; then
+            echo "⚠️ testng-results.xml NOT FOUND! Tests may have failed before generating reports."
             echo "PASSED=0" >> $GITHUB_ENV
             echo "FAILED=0" >> $GITHUB_ENV
             echo "SKIPPED=0" >> $GITHUB_ENV
             echo "TOTAL=0" >> $GITHUB_ENV
             exit 0
           fi
-          PASSED=$(grep -oP '(?<=passed=")\d+' "$XML_FILE" | head -1)
-          FAILED=$(grep -oP '(?<=failed=")\d+' "$XML_FILE" | head -1)
-          SKIPPED=$(grep -oP '(?<=skipped=")\d+' "$XML_FILE" | head -1)
+
+          echo "✅ testng-results.xml FOUND! Extracting test results..."
+          cat "$XML_FILE"  # Debug: Print XML content
+
+          PASSED=$(xmllint --xpath "string(//testng-results/@passed)" "$XML_FILE" 2>/dev/null)
+          FAILED=$(xmllint --xpath "string(//testng-results/@failed)" "$XML_FILE" 2>/dev/null)
+          SKIPPED=$(xmllint --xpath "string(//testng-results/@skipped)" "$XML_FILE" 2>/dev/null)
+
           PASSED=${PASSED:-0}
           FAILED=${FAILED:-0}
           SKIPPED=${SKIPPED:-0}
           TOTAL=$((PASSED + FAILED + SKIPPED))
+
+          echo "Extracted Results: ✅ Passed=$PASSED, ❌ Failed=$FAILED, ⚠️ Skipped=$SKIPPED, 📌 Total=$TOTAL"
+          
           echo "PASSED=$PASSED" >> $GITHUB_ENV
           echo "FAILED=$FAILED" >> $GITHUB_ENV
           echo "SKIPPED=$SKIPPED" >> $GITHUB_ENV
           echo "TOTAL=$TOTAL" >> $GITHUB_ENV
 
+      - name: Install Mail Utilities
+        run: sudo apt-get update && sudo apt-get install -y mailutils
+
       - name: Send Email Notification
         if: always()
         run: |
-          echo -e "Test Summary:\n✅ Passed: $PASSED\n❌ Failed: $FAILED\n⚠️ Skipped: $SKIPPED\n📌 Total: $TOTAL" | mail -s "Test Results" ${{ secrets.RECIPIENT_EMAIL }}
+          SUBJECT="📝 TestNG Suite Execution Summary"
+          BODY="📊 Test Suite Execution Summary:\n\n✅ Passed: $PASSED\n❌ Failed: $FAILED\n⚠️ Skipped: $SKIPPED\n📌 Total: $TOTAL\n\n🔗 Allure Report: Attachments Included"
+
+          echo -e "$BODY" | mail -s "$SUBJECT" ${{ secrets.RECIPIENT_EMAIL }}
 
       - name: Send Google Chat Notification
         if: always()
         run: |
+          CHAT_MESSAGE="📢 *Test Suite Execution Summary* 📢\n
+          ✅ *Passed:* $PASSED\n
+          ❌ *Failed:* $FAILED\n
+          ⚠️ *Skipped:* $SKIPPED\n
+          📌 *Total:* $TOTAL\n
+          🔗 *Allure Report:* Attachments Included"
+
           curl -X POST -H "Content-Type: application/json" \
-            -d "{\"text\": \"📢 Test Suite Execution Summary 📢\n✅ Passed: $PASSED\n❌ Failed: $FAILED\n⚠️ Skipped: $SKIPPED\n📌 Total: $TOTAL\"}" \
+            -d "{\"text\": \"$CHAT_MESSAGE\"}" \
             "${{ secrets.GOOGLE_CHAT_WEBHOOK }}"
