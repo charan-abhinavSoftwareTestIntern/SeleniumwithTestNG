@@ -1,3 +1,5 @@
+name: Run Selenium Tests
+
 on:
   workflow_dispatch:
 
@@ -14,7 +16,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Install Dependencies (Chrome, ChromeDriver, XML Tools, Mailutils)
+      - name: Install Dependencies (Chrome, ChromeDriver, Mailutils)
         run: |
           sudo apt-get update
           sudo apt-get install -y google-chrome-stable libxml2-utils mailutils
@@ -31,8 +33,8 @@ jobs:
             exit 1
           fi
 
-          wget -q "$DOWNLOAD_URL" -O chromedriver-linux64.zip
-          unzip chromedriver-linux64.zip
+          wget -q "$DOWNLOAD_URL" -O chromedriver.zip
+          unzip chromedriver.zip
           sudo mv chromedriver-linux64/chromedriver /usr/local/bin/
           sudo chmod +x /usr/local/bin/chromedriver
           echo "✅ ChromeDriver Installed: $(chromedriver --version)"
@@ -48,10 +50,12 @@ jobs:
         id: test_execution
         run: |
           echo "🚀 Running tests using testng.xml..."
-          mvn clean test -Dsurefire.suiteXmlFiles=testng.xml || true  # Prevents workflow failure
+          mvn clean test -Dsurefire.suiteXmlFiles=src/test/resources/testng.xml || true  # Prevents workflow failure
 
-      - name: Debug Test Order
-        run: cat target/surefire-reports/testng-results.xml || echo "⚠️ testng-results.xml not found!"
+      - name: Debug Test Results
+        run: |
+          ls -lh target/surefire-reports/
+          cat target/surefire-reports/testng-results.xml || echo "⚠️ testng-results.xml not found!"
 
       - name: Extract Test Results
         run: |
