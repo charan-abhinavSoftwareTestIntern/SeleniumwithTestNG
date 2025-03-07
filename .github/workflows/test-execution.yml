@@ -52,21 +52,24 @@ jobs:
       - name: Extract Test Results
         run: |
           XML_FILE="target/surefire-reports/testng-results.xml"
-          if [ -f "$XML_FILE" ]; then
-            echo "✅ testng-results.xml file found!"
-            cat "$XML_FILE" # Debug: Print XML content
-
-            PASSED=$(grep -oP '(?<=<passed>).*(?=</passed>)' $XML_FILE | awk '{s+=$1} END {print s}')
-            FAILED=$(grep -oP '(?<=<failed>).*(?=</failed>)' $XML_FILE | awk '{s+=$1} END {print s}')
-            SKIPPED=$(grep -oP '(?<=<skipped>).*(?=</skipped>)' $XML_FILE | awk '{s+=$1} END {print s}')
-          else
-            echo "⚠️ testng-results.xml not found! Setting default values."
-            PASSED=0
-            FAILED=0
-            SKIPPED=0
+          
+          if [ ! -f "$XML_FILE" ]; then
+            echo "⚠️ testng-results.xml NOT FOUND! Tests may have failed before generating reports."
+            echo "PASSED=0" >> $GITHUB_ENV
+            echo "FAILED=0" >> $GITHUB_ENV
+            echo "SKIPPED=0" >> $GITHUB_ENV
+            echo "TOTAL=0" >> $GITHUB_ENV
+            exit 0
           fi
 
-          # Ensure variables are not empty
+          echo "✅ testng-results.xml FOUND! Extracting test results..."
+          cat "$XML_FILE"  # Debug: Print XML content
+
+          PASSED=$(xmllint --xpath "string(//testng-results/@passed)" "$XML_FILE" 2>/dev/null)
+          FAILED=$(xmllint --xpath "string(//testng-results/@failed)" "$XML_FILE" 2>/dev/null)
+          SKIPPED=$(xmllint --xpath "string(//testng-results/@skipped)" "$XML_FILE" 2>/dev/null)
+
+          # Ensure variables have default values
           PASSED=${PASSED:-0}
           FAILED=${FAILED:-0}
           SKIPPED=${SKIPPED:-0}
