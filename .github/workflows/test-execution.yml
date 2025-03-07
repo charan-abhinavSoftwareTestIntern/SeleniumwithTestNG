@@ -16,10 +16,10 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Install Dependencies (Chrome, ChromeDriver, Mailutils)
+      - name: Install Dependencies (Chrome, ChromeDriver, Sendmail)
         run: |
           sudo apt-get update
-          sudo apt-get install -y google-chrome-stable libxml2-utils mailutils jq
+          sudo apt-get install -y google-chrome-stable libxml2-utils sendmail jq
           echo "✅ Dependencies Installed!"
           echo "📌 Chrome Version: $(google-chrome --version)"
 
@@ -50,7 +50,7 @@ jobs:
         id: test_execution
         run: |
           echo "🚀 Running tests using testng.xml..."
-          mvn clean test -Dsurefire.suiteXmlFiles=src/test/resources/testng.xml || true  # Prevents workflow failure
+          mvn clean test -Dsurefire.suiteXmlFiles=src/test/resources/testng.xml || true
 
       - name: Extract Test Results
         run: |
@@ -85,11 +85,11 @@ jobs:
 
       - name: Debug Mail Command
         run: |
-          if ! command -v mail &> /dev/null; then
-            echo "❌ Mail command not found! Email will not be sent."
+          if ! command -v sendmail &> /dev/null; then
+            echo "❌ sendmail command not found! Email will not be sent."
             exit 1
           else
-            echo "✅ Mail command is available!"
+            echo "✅ sendmail is available!"
           fi
 
       - name: Send Email Notification
@@ -98,12 +98,17 @@ jobs:
           SUBJECT="📝 TestNG Suite Execution Summary"
           BODY="📊 Test Suite Execution Summary:\n\n✅ Passed: $PASSED\n❌ Failed: $FAILED\n⚠️ Skipped: $SKIPPED\n📌 Total: $TOTAL\n\n🔗 Allure Report: $ALLURE_REPORT_URL"
 
-          echo -e "$BODY" | mail -s "$SUBJECT" ${{ secrets.RECIPIENT_EMAIL }}
+          echo -e "To: ${{ secrets.RECIPIENT_EMAIL }}\nSubject: $SUBJECT\n\n$BODY" | sendmail -t
           echo "📧 Email sent to: ${{ secrets.RECIPIENT_EMAIL }}"
 
       - name: Send Google Chat Notification (Single Message)
         if: success() || failure()
         run: |
+          if [ -f "/tmp/chat_message_sent" ]; then
+            echo "📢 Google Chat message already sent. Skipping duplicate notification."
+            exit 0
+          fi
+
           CHAT_MESSAGE="📢 *Test Suite Execution Summary* 📢\n
           ✅ *Passed:* $PASSED\n
           ❌ *Failed:* $FAILED\n
@@ -116,3 +121,4 @@ jobs:
             "${{ secrets.GOOGLE_CHAT_WEBHOOK }}"
 
           echo "📢 Google Chat notification sent successfully!"
+          touch /tmp/chat_message_sent
